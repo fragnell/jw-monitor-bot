@@ -34,7 +34,7 @@ steps:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
       CHAT_ID: ${{ secrets.CHAT_ID }}
     run: |
-      timeout 60s python jw_bot.py || true
+      python jw_bot.py
 
   - name: Commit updated state
     run: |
