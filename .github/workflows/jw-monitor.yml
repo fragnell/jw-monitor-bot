@@ -1,0 +1,48 @@
+name: JW Monitor
+
+on:
+schedule:
+- cron: '*/30 5-19 * * *'
+workflow_dispatch:
+
+jobs:
+monitor:
+runs-on: ubuntu-latest
+
+```
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
+
+  - name: Setup Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.13'
+
+  - name: Install dependencies
+    run: |
+      pip install -r requirements.txt
+
+  - name: Restore state file
+    run: |
+      if [ ! -f jw_state.json ]; then
+        echo '{"videos":[],"news":[],"magazines":[]}' > jw_state.json
+      fi
+
+  - name: Run bot
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.CHAT_ID }}
+    run: |
+      timeout 60s python jw_bot.py || true
+
+  - name: Commit updated state
+    run: |
+      git config user.name "github-actions"
+      git config user.email "github-actions@github.com"
+
+      git add jw_state.json || true
+
+      git diff --cached --quiet || git commit -m "Update JW state"
+      git push || true
+```
