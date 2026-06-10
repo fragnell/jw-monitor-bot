@@ -239,18 +239,10 @@ def check_all():
 
 
 def main():
-    send_telegram(
-        "✅ <b>JW Monitor Bot avviato</b>\n\n🎬 Video\n📰 News\n📚 Riviste"
-    )
-
-    while True:
-        try:
-            check_all()
-        except Exception as e:
-            print("Errore:", e)
-
-        print("Attendo prossimo controllo...")
-        time.sleep(CHECK_INTERVAL)
+    try:
+        check_all()
+    except Exception as e:
+        print("Errore:", e)
 
 
 if __name__ == "__main__":
