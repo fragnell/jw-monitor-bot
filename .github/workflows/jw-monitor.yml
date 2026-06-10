@@ -2,10 +2,34 @@ name: JW Monitor
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '*/30 5-19 * * *'
 
 jobs:
   monitor:
     runs-on: ubuntu-latest
     steps:
-      - name: Test
-        run: echo "Workflow OK"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Create state file if missing
+        run: |
+          if [ ! -f jw_state.json ]; then
+            echo '{"videos":[],"news":[],"magazines":[]}' > jw_state.json
+          fi
+
+      - name: Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: |
+          python jw_bot.py
