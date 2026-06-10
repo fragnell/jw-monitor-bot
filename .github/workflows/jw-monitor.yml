@@ -8,6 +8,9 @@ on:
 jobs:
   monitor:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,3 +36,13 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
           python jw_bot.py
+
+      - name: Commit state
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add jw_state.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update jw_state"
+            git push
+          fi
