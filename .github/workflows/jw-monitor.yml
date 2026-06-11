@@ -3,7 +3,7 @@ name: JW Monitor
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/30 5-19 * * *'
+    - cron: '*/5 * * * *'
 
 jobs:
   monitor:
