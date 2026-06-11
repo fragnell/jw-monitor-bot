@@ -44,10 +44,109 @@ def send_telegram(text: str):
         print(f"  [TELEGRAM ERROR] {e}")
 
 
+def send_telegram_to(chat_id: int, text: str):
+    """Invia un messaggio a un chat_id specifico."""
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            json={
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+            },
+            timeout=15,
+        )
+    except Exception as e:
+        print(f"  [TELEGRAM ERROR] {e}")
+
+
 def send_error(context: str, error: Exception):
     """Notifica errori critici via Telegram."""
     msg = f"⚠️ <b>JW Monitor — Errore</b>\n\n{context}\n<code>{error}</code>"
     send_telegram(msg)
+
+
+# ─── Comandi Telegram ────────────────────────────────────────────────────────
+
+def get_updates() -> list:
+    """Legge i messaggi in arrivo non ancora processati."""
+    try:
+        r = requests.get(
+            f"https://api.telegram.org/bot{TOKEN}/getUpdates",
+            params={"timeout": 3},
+            timeout=10,
+        )
+        return r.json().get("result", [])
+    except Exception:
+        return []
+
+
+def mark_update_read(update_id: int):
+    """Segna l'update come letto."""
+    try:
+        requests.get(
+            f"https://api.telegram.org/bot{TOKEN}/getUpdates",
+            params={"offset": update_id + 1, "timeout": 1},
+            timeout=5,
+        )
+    except Exception:
+        pass
+
+
+def handle_commands():
+    """Processa i comandi ricevuti dall'ultima esecuzione."""
+    updates = get_updates()
+
+    if not updates:
+        return
+
+    for update in updates:
+        message = update.get("message", {})
+        text = message.get("text", "").strip()
+        chat_id = message.get("chat", {}).get("id")
+
+        if not text or not chat_id:
+            mark_update_read(update["update_id"])
+            continue
+
+        print(f"  [CMD] {text} da {chat_id}")
+
+        if text.startswith("/start"):
+            send_telegram_to(chat_id, (
+                "👋 <b>Benvenuto su JW Monitor!</b>\n\n"
+                "Riceverai notifiche automatiche quando su JW.org (italiano) escono:\n\n"
+                "🎬 Nuovi video\n"
+                "📰 Nuove news\n"
+                "📚 Nuove riviste\n\n"
+                "Il controllo avviene ogni 15 minuti automaticamente.\n\n"
+                "<b>Comandi disponibili:</b>\n"
+                "/start — questo messaggio\n"
+                "/help — lista comandi\n"
+                "/status — stato del bot"
+            ))
+
+        elif text.startswith("/help"):
+            send_telegram_to(chat_id, (
+                "📋 <b>Comandi JW Monitor</b>\n\n"
+                "/start — messaggio di benvenuto\n"
+                "/help — lista comandi\n"
+                "/status — verifica che il bot sia attivo"
+            ))
+
+        elif text.startswith("/status"):
+            now = datetime.now().strftime("%d/%m/%Y %H:%M")
+            send_telegram_to(chat_id, (
+                f"✅ <b>JW Monitor attivo</b>\n\n"
+                f"🕐 Ultimo controllo: {now}\n"
+                f"⏱ Frequenza: ogni 15 minuti\n\n"
+                f"Monitoraggio attivo per:\n"
+                f"🎬 Video\n"
+                f"📰 News\n"
+                f"📚 Riviste"
+            ))
+
+        mark_update_read(update["update_id"])
 
 
 # ─── Stato ───────────────────────────────────────────────────────────────────
@@ -57,7 +156,6 @@ def load_state() -> dict:
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
                 state = json.load(f)
-                # Validazione struttura
                 assert "videos" in state
                 assert "news" in state
                 assert "magazines" in state
@@ -96,14 +194,14 @@ def fetch_videos() -> list:
             if natural_key else ""
         )
         items.append({
-            "id": guid,                  # identificativo stabile
+            "id": guid,
             "title": title,
             "url": finder_url,
         })
     return items
 
 
-# ─── News ─────────────────────────────────────────────────────────────────────
+# ─── News ────────────────────────────────────────────────────────────────────
 
 def fetch_news() -> list:
     soup = fetch_html(NEWS_URL)
@@ -114,18 +212,16 @@ def fetch_news() -> list:
         path = unquote(a.get("href", "")).rstrip("/")
         parts = [p for p in path.split("/") if p]
 
-        # Struttura valida: it/news/area-geografica/paese/titolo = 5 parti
         if len(parts) != 5:
             continue
 
-        slug = f"{parts[3]}/{parts[4]}"   # paese/titolo — identificativo stabile
+        slug = f"{parts[3]}/{parts[4]}"
         if slug in seen_slugs:
             continue
         seen_slugs.add(slug)
 
         title = a.get_text(" ", strip=True)
         if len(title) < 8:
-            # Prova col testo dell'H3 vicino
             title = parts[4].replace("-", " ").title()
 
         items.append({
@@ -137,7 +233,7 @@ def fetch_news() -> list:
     return items
 
 
-# ─── Riviste ──────────────────────────────────────────────────────────────────
+# ─── Riviste ─────────────────────────────────────────────────────────────────
 
 def fetch_magazines() -> list:
     soup = fetch_html(MAGAZINES_URL)
@@ -149,9 +245,9 @@ def fetch_magazines() -> list:
         parts = href.split("/riviste/")
 
         if len(parts) != 2 or not parts[1]:
-            continue  # salta link alla pagina categoria
+            continue
 
-        slug = parts[1].rstrip("/")       # identificativo stabile
+        slug = parts[1].rstrip("/")
         if slug in seen_slugs:
             continue
         seen_slugs.add(slug)
@@ -169,7 +265,7 @@ def fetch_magazines() -> list:
     return items
 
 
-# ─── Check principale ─────────────────────────────────────────────────────────
+# ─── Check principale ────────────────────────────────────────────────────────
 
 SECTIONS = {
     "videos":    {"fetch": fetch_videos,    "emoji": "🎬", "label": "Nuovo Video JW.org"},
@@ -196,7 +292,6 @@ def check_all():
 
         known = set(state.get(key, []))
 
-        # Primo avvio: popola lo stato senza notificare
         if not known:
             state[key] = [x["id"] for x in items]
             print(f"  Primo avvio: salvati {len(items)} elementi, nessuna notifica.")
@@ -214,19 +309,21 @@ def check_all():
             send_telegram(msg)
             time.sleep(1)
 
-        # Aggiorna stato con gli ID correnti (cap a 500 per non crescere all'infinito)
         state[key] = [x["id"] for x in items][:500]
 
     save_state(state)
 
 
+# ─── Main ────────────────────────────────────────────────────────────────────
+
 def main():
     try:
+        handle_commands()
         check_all()
     except Exception as e:
         print(f"Errore critico: {e}")
         send_error("Errore critico in <b>check_all</b>", e)
-        raise  # Fa fallire il job GitHub Actions
+        raise
 
 
 if __name__ == "__main__":
