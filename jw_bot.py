@@ -70,28 +70,25 @@ def send_error(context: str, error: Exception):
 # ─── Comandi Telegram ────────────────────────────────────────────────────────
 
 def get_updates() -> list:
-    """Legge i messaggi in arrivo non ancora processati."""
+    """Legge i messaggi in arrivo e li marca subito tutti come letti."""
     try:
         r = requests.get(
             f"https://api.telegram.org/bot{TOKEN}/getUpdates",
             params={"timeout": 3},
             timeout=10,
         )
-        return r.json().get("result", [])
+        results = r.json().get("result", [])
+        # Marca subito tutti come letti per evitare duplicati alla prossima run
+        if results:
+            last_id = results[-1]["update_id"]
+            requests.get(
+                f"https://api.telegram.org/bot{TOKEN}/getUpdates",
+                params={"offset": last_id + 1, "timeout": 1},
+                timeout=5,
+            )
+        return results
     except Exception:
         return []
-
-
-def mark_update_read(update_id: int):
-    """Segna l'update come letto."""
-    try:
-        requests.get(
-            f"https://api.telegram.org/bot{TOKEN}/getUpdates",
-            params={"offset": update_id + 1, "timeout": 1},
-            timeout=5,
-        )
-    except Exception:
-        pass
 
 
 def handle_commands():
@@ -107,7 +104,6 @@ def handle_commands():
         chat_id = message.get("chat", {}).get("id")
 
         if not text or not chat_id:
-            mark_update_read(update["update_id"])
             continue
 
         print(f"  [CMD] {text} da {chat_id}")
@@ -145,8 +141,6 @@ def handle_commands():
                 f"📰 News\n"
                 f"📚 Riviste"
             ))
-
-        mark_update_read(update["update_id"])
 
 
 # ─── Stato ───────────────────────────────────────────────────────────────────
