@@ -21,6 +21,7 @@ VIDEOS_API = (
 )
 NEWS_URL = "https://www.jw.org/it/news/"
 MAGAZINES_URL = "https://www.jw.org/it/biblioteca-digitale/riviste/"
+HOME_URL = "https://www.jw.org/it/"
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
@@ -114,7 +115,8 @@ def handle_commands():
                 "Riceverai notifiche automatiche quando su JW.org (italiano) escono:\n\n"
                 "🎬 Nuovi video\n"
                 "📰 Nuove news\n"
-                "📚 Nuove riviste\n\n"
+                "📚 Nuove riviste\n"
+                "🏠 Aggiornamento homepage\n\n"
                 "Il controllo avviene ogni 15 minuti automaticamente.\n\n"
                 "<b>Comandi disponibili:</b>\n"
                 "/start — questo messaggio\n"
@@ -139,7 +141,8 @@ def handle_commands():
                 f"Monitoraggio attivo per:\n"
                 f"🎬 Video\n"
                 f"📰 News\n"
-                f"📚 Riviste"
+                f"📚 Riviste\n"
+                f"🏠 Homepage"
             ))
 
 
@@ -153,10 +156,11 @@ def load_state() -> dict:
                 assert "videos" in state
                 assert "news" in state
                 assert "magazines" in state
+                assert "homepage" in state
                 return state
         except Exception:
             print("  [WARN] Stato corrotto, reset.")
-    return {"videos": [], "news": [], "magazines": []}
+    return {"videos": [], "news": [], "magazines": [], "homepage": []}
 
 
 def save_state(state: dict):
@@ -259,12 +263,37 @@ def fetch_magazines() -> list:
     return items
 
 
+# ─── Homepage ────────────────────────────────────────────────────────────────
+
+def fetch_homepage() -> list:
+    soup = fetch_html(HOME_URL)
+
+    a = soup.select_one('h3.billboardTitle a[href*="/biblioteca-digitale/"]')
+    if not a:
+        return []
+
+    href = a.get("href", "").rstrip("/")
+    title = a.get_text(" ", strip=True)
+
+    if not href or not title:
+        return []
+
+    slug = href.split("/it/")[-1].rstrip("/")
+
+    return [{
+        "id": slug,
+        "title": title,
+        "url": f"https://www.jw.org/it/{slug}/",
+    }]
+
+
 # ─── Check principale ────────────────────────────────────────────────────────
 
 SECTIONS = {
     "videos":    {"fetch": fetch_videos,    "emoji": "🎬", "label": "Nuovo Video JW.org"},
     "news":      {"fetch": fetch_news,      "emoji": "📰", "label": "Nuova News JW.org"},
     "magazines": {"fetch": fetch_magazines, "emoji": "📚", "label": "Nuova Pubblicazione JW.org"},
+    "homepage":  {"fetch": fetch_homepage,  "emoji": "🏠", "label": "Homepage JW.org aggiornata"},
 }
 
 
