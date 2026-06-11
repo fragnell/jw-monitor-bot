@@ -117,7 +117,7 @@ def handle_commands():
                 "📰 Nuove news\n"
                 "📚 Nuove riviste\n"
                 "🏠 Aggiornamento homepage\n\n"
-                "Il controllo avviene ogni 15 minuti automaticamente.\n\n"
+                "Il bot è in funzione dalle 06:00 alle 23:00.\n\n"
                 "<b>Comandi disponibili:</b>\n"
                 "/start — questo messaggio\n"
                 "/help — lista comandi\n"
