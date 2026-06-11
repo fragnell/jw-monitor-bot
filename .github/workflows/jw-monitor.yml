@@ -3,7 +3,11 @@ name: JW Monitor
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/30 5-19 * * *'
+
+concurrency:
+  group: jw-monitor
+  cancel-in-progress: false
 
 jobs:
   monitor:
