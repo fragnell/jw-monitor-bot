@@ -59,3 +59,5 @@ Il bot monitora queste pagine:
 - `https://www.jw.org/it/notizie/` — News
 - `https://www.jw.org/it/biblioteca/video/` — Video
 - `https://www.jw.org/it/` — Homepage generale
+
+<!-- aggiornamento -->
