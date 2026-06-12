@@ -31,7 +31,8 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 def send_telegram(text: str):
 try:
-send_telegram_to(CHAT_ID, text)
+    send_telegram_to(CHAT_ID, text)
+
     if GROUP_CHAT_ID:
         send_telegram_to(GROUP_CHAT_ID, text)
 
