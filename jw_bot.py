@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 
 STATE_FILE = "jw_state.json"
 MAX_NOTIFY = 3
@@ -29,20 +30,14 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 # ─── Telegram ────────────────────────────────────────────────────────────────
 
 def send_telegram(text: str):
-    try:
-        r = requests.post(
-            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-            json={
-                "chat_id": CHAT_ID,
-                "text": text,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": False,
-            },
-            timeout=15,
-        )
-        r.raise_for_status()
-    except Exception as e:
-        print(f"  [TELEGRAM ERROR] {e}")
+try:
+send_telegram_to(CHAT_ID, text)
+    if GROUP_CHAT_ID:
+        send_telegram_to(GROUP_CHAT_ID, text)
+
+except Exception as e:
+    print(f"  [TELEGRAM ERROR] {e}")
+
 
 
 def send_telegram_to(chat_id: int, text: str):
