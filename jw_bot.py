@@ -12,6 +12,9 @@ TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 
+print("CHAT_ID:", CHAT_ID)
+print("GROUP_CHAT_ID:", GROUP_CHAT_ID)
+
 STATE_FILE = "jw_state.json"
 MAX_NOTIFY = 3
 BASE_URL = "https://www.jw.org"
