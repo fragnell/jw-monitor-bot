@@ -30,8 +30,8 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 # ─── Telegram ────────────────────────────────────────────────────────────────
 
 def send_telegram(text: str):
-try:
-    send_telegram_to(CHAT_ID, text)
+    try:
+        send_telegram_to(CHAT_ID, text)
 
     if GROUP_CHAT_ID:
         send_telegram_to(GROUP_CHAT_ID, text)
