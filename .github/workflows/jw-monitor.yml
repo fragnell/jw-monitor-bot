@@ -50,15 +50,31 @@ jobs:
 
       - name: Fetch meetings page via curl
         run: |
-          # Estrai il link delle adunanze con numero settimana (es. /meetings/r6/lp-i/2026/24)
-          MEETINGS_URL=$(grep -o 'href="/it/wol/meetings/[^"]*[0-9]"' wol_page.html | head -1 | sed 's/href="//;s/"//')
-          if [ -z "$MEETINGS_URL" ]; then
-            echo "Link adunanze non trovato, skip."
-            touch wol_meetings.html
+          # Costruisce l'URL adunanze con anno e numero settimana ISO
+          YEAR=$(TZ="Europe/Rome" date +%Y)
+          WEEK=$(TZ="Europe/Rome" date +%-V)
+          FULL_MEETINGS_URL="https://wol.jw.org/it/wol/meetings/r6/lp-i/${YEAR}/${WEEK}"
+          echo "URL adunanze: ${FULL_MEETINGS_URL}"
+          curl -s \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
+            -H "Accept-Language: it-IT,it;q=0.9" \
+            -H "Accept-Encoding: gzip, deflate, br" \
+            --max-time 30 \
+            --compressed \
+            "${FULL_MEETINGS_URL}" \
+            -o wol_meetings.html
+          echo "File size wol_meetings: $(wc -c < wol_meetings.html) bytes"
+
+          # Estrai il link della Torre di Guardia (secondo link /wol/d/)
+          WT_URL=$(grep -o 'href="/it/wol/d/[^"]*"' wol_meetings.html | tail -1 | sed 's/href="//;s/"//')
+          if [ -z "$WT_URL" ]; then
+            echo "Link Torre di Guardia non trovato, skip."
             touch wol_watchtower.html
           else
-            FULL_MEETINGS_URL="https://wol.jw.org${MEETINGS_URL}"
-            echo "URL adunanze: ${FULL_MEETINGS_URL}"
+            FULL_WT_URL="https://wol.jw.org${WT_URL}"
+            echo "URL Torre di Guardia: ${FULL_WT_URL}"
+            echo "WATCHTOWER_URL=${FULL_WT_URL}" >> $GITHUB_ENV
             curl -s \
               -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
               -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
@@ -66,30 +82,9 @@ jobs:
               -H "Accept-Encoding: gzip, deflate, br" \
               --max-time 30 \
               --compressed \
-              "${FULL_MEETINGS_URL}" \
-              -o wol_meetings.html
-            echo "File size wol_meetings: $(wc -c < wol_meetings.html) bytes"
-
-            # Estrai il link della Torre di Guardia (secondo link /wol/d/)
-            WT_URL=$(grep -o 'href="/it/wol/d/[^"]*"' wol_meetings.html | tail -1 | sed 's/href="//;s/"//')
-            if [ -z "$WT_URL" ]; then
-              echo "Link Torre di Guardia non trovato, skip."
-              touch wol_watchtower.html
-            else
-              FULL_WT_URL="https://wol.jw.org${WT_URL}"
-              echo "URL Torre di Guardia: ${FULL_WT_URL}"
-              echo "WATCHTOWER_URL=${FULL_WT_URL}" >> $GITHUB_ENV
-              curl -s \
-                -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-                -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
-                -H "Accept-Language: it-IT,it;q=0.9" \
-                -H "Accept-Encoding: gzip, deflate, br" \
-                --max-time 30 \
-                --compressed \
-                "${FULL_WT_URL}" \
-                -o wol_watchtower.html
-              echo "File size wol_watchtower: $(wc -c < wol_watchtower.html) bytes"
-            fi
+              "${FULL_WT_URL}" \
+              -o wol_watchtower.html
+            echo "File size wol_watchtower: $(wc -c < wol_watchtower.html) bytes"
           fi
 
       - name: Run bot
