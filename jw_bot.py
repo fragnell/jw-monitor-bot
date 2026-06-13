@@ -285,8 +285,22 @@ def fetch_homepage() -> list:
 # ─── Scrittura del giorno ────────────────────────────────────────────────────
 
 def fetch_daily_text() -> dict | None:
-    """Estrae la scrittura del giorno da WOL."""
-    soup = fetch_html(DAILY_TEXT_URL)
+    """Estrae la scrittura del giorno da WOL con retry automatico."""
+    soup = None
+    for attempt in range(3):
+        try:
+            r = requests.get(DAILY_TEXT_URL, headers=HEADERS, timeout=40)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.text, "html.parser")
+            break
+        except Exception as e:
+            print(f"  [WARN] Tentativo {attempt + 1}/3 fallito: {e}")
+            if attempt < 2:
+                time.sleep(5)
+
+    if not soup:
+        print("  [ERROR] Tutti i tentativi falliti per WOL.")
+        return None
 
     container = soup.select_one('#dailyText .tabContent')
     if not container:
