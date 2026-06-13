@@ -164,7 +164,7 @@ def load_state() -> dict:
                 return state
         except Exception:
             print("  [WARN] Stato corrotto, reset.")
-    return {"videos": [], "news": [], "magazines": [], "homepage": [], "daily_text_id": "", "watchtower_id": ""}
+    return {"videos": [], "news": [], "magazines": [], "homepage": [], "daily_text_id": "", "watchtower_id": "", "meeting_id": ""}
 
 
 def save_state(state: dict):
@@ -400,6 +400,150 @@ def check_daily_text(state: dict, log: list):
     state["daily_text_id"] = daily["id"]
 
 
+
+# ─── Adunanza infrasettimanale ───────────────────────────────────────────────
+
+MEETING_FILE = "wol_meetings_detail.html"
+MEETING_URL_ENV = "MEETING_URL"
+
+
+def fetch_meeting() -> dict | None:
+    """Estrae i dati dell'adunanza infrasettimanale."""
+    if not os.path.exists(MEETING_FILE):
+        print(f"  [WARN] {MEETING_FILE} non trovato, skip.")
+        return None
+
+    try:
+        with open(MEETING_FILE, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
+    except Exception as e:
+        print(f"  [ERROR] Lettura {MEETING_FILE}: {e}")
+        return None
+
+    # Settimana dal file adunanze
+    week = ""
+    if os.path.exists(MEETINGS_FILE):
+        try:
+            with open(MEETINGS_FILE, "r", encoding="utf-8") as f:
+                soup_m = BeautifulSoup(f.read(), "html.parser")
+            links = soup_m.select('a[href*="/wol/d/"]')
+            if links:
+                raw = links[0].get_text(" ", strip=True)
+                parts = raw.split()
+                week_parts = []
+                for p in parts:
+                    week_parts.append(p)
+                    if p[0].isalpha() and len(p) > 2:
+                        break
+                week = " ".join(week_parts)
+        except Exception:
+            pass
+
+    # Lettura biblica — primo h2 senza colore
+    bible_reading = ""
+    for h2 in soup.select('h2'):
+        cls = h2.get("class", [])
+        cls_str = " ".join(cls) if cls else ""
+        if "du-color" not in cls_str:
+            bible_reading = h2.get_text(" ", strip=True).title()
+            break
+
+    # Tema Tesori — primo h3 con colore teal
+    treasures_theme = ""
+    for h3 in soup.select('h3'):
+        cls = " ".join(h3.get("class", []))
+        if "teal" in cls:
+            text = h3.get_text(" ", strip=True)
+            # Rimuovi il numero iniziale (es. "1. L'esempio...")
+            if ". " in text:
+                text = text.split(". ", 1)[1]
+            treasures_theme = text
+            break
+
+    # Parti Vita cristiana — h3 con colore maroon (escluso cantici)
+    christian_life_parts = []
+    for h3 in soup.select('h3'):
+        cls = " ".join(h3.get("class", []))
+        if "maroon" in cls:
+            text = h3.get_text(" ", strip=True)
+            if ". " in text:
+                text = text.split(". ", 1)[1]
+            christian_life_parts.append(text)
+
+    # Studio biblico — cerca testo e riferimento libro
+    study_ref = ""
+    for h3 in soup.select('h3'):
+        if "Studio biblico" in h3.get_text():
+            section = h3.find_parent('li') or h3.find_parent()
+            if section:
+                pc_links = section.select('a[href*="/wol/pc/"]')
+                # Penultimo link = riferimento libro (es. "lfb capp. 92-93")
+                if len(pc_links) >= 2:
+                    study_ref = pc_links[-2].get_text(" ", strip=True)
+            break
+
+    # Aggiorna ultima parte con riferimento
+    if christian_life_parts and study_ref:
+        last = christian_life_parts[-1]
+        christian_life_parts[-1] = f"{last} ({study_ref})"
+
+    url = os.getenv(MEETING_URL_ENV, "https://wol.jw.org/it/wol/meetings/r6/lp-i")
+    article_id = url.split("/wol/d/")[-1] if "/wol/d/" in url else ""
+
+    if not article_id:
+        print("  [WARN] ID adunanza non trovato.")
+        return None
+
+    return {
+        "id": article_id,
+        "week": week,
+        "bible_reading": bible_reading,
+        "treasures_theme": treasures_theme,
+        "christian_life_parts": christian_life_parts,
+        "url": url,
+    }
+
+
+def check_meeting(state: dict, log: list):
+    """Invia la notifica adunanza infrasettimanale solo il lunedì."""
+    if False:  # test — in produzione: datetime.now(tz=ROME_TZ).weekday() != 0
+        print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Adunanza: non è lunedì, skip.")
+        return
+
+    print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo adunanza infrasettimanale...")
+
+    try:
+        meeting = fetch_meeting()
+    except Exception as e:
+        print(f"  [ERROR] {e}")
+        send_error("Errore nel fetch dell'<b>adunanza infrasettimanale</b>", e)
+        return
+
+    if not meeting:
+        return
+
+    last_id = state.get("meeting_id", "")
+
+    if meeting["id"] == last_id:
+        print(f"  Adunanza già inviata per {meeting['id']}, skip.")
+        return
+
+    print(f"  Nuova adunanza: {meeting['id']}")
+
+    parts_text = "\n".join(f"• {p}" for p in meeting["christian_life_parts"])
+
+    msg = (
+        f"📅 <b>Adunanza infrasettimanale — {meeting['week']}</b>\n\n"
+        f"📖 <b>Lettura biblica:</b> {meeting['bible_reading']}\n\n"
+        f"🔵 <b>Tesori della Parola di Dio:</b>\n{meeting['treasures_theme']}\n\n"
+        f"🟤 <b>Vita cristiana:</b>\n{parts_text}\n\n"
+        f"🔗 {meeting['url']}"
+    )
+    send_telegram(msg)
+    log_event(log, "meeting", meeting["id"], f"Adunanza {meeting['week']}")
+    state["meeting_id"] = meeting["id"]
+
+
 # ─── Torre di Guardia settimanale ────────────────────────────────────────────
 
 def fetch_watchtower() -> dict | None:
@@ -522,6 +666,7 @@ def check_all():
     log = load_log()
 
     check_daily_text(state, log)
+    check_meeting(state, log)
     check_watchtower(state, log)
 
     for key, cfg in SECTIONS.items():
