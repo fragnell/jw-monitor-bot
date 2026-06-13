@@ -35,7 +35,9 @@ jobs:
       - name: Fetch daily text via curl
         run: |
           TODAY=$(TZ="Europe/Rome" date +%Y/%-m/%-d)
+          TODAY_ISO=$(TZ="Europe/Rome" date +%Y-%m-%d)
           echo "Data italiana: ${TODAY}"
+          echo "TODAY_ISO=${TODAY_ISO}" >> $GITHUB_ENV
           curl -s \
             -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
             -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
@@ -52,6 +54,7 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
           GROUP_CHAT_ID: ${{ secrets.GROUP_CHAT_ID }}
+          TODAY_ISO: ${{ env.TODAY_ISO }}
         run: |
           python jw_bot.py
 
