@@ -475,7 +475,7 @@ def fetch_watchtower() -> dict | None:
 def check_watchtower(state: dict, log: list):
     """Invia la notifica Torre di Guardia solo il lunedì."""
     # Controlla se è lunedì
-    if datetime.now(tz=ROME_TZ).weekday() != 0:
+    if datetime.now(tz=ROME_TZ).weekday() != 99:
         print(f"[{datetime.now():%d/%m/%Y %H:%M}] Torre di Guardia: non è lunedì, skip.")
         return
 
