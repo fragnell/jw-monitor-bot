@@ -2,7 +2,7 @@
 import json
 import os
 import time
-from datetime import datetime, date, timedelta
+from datetime import datetime
 from urllib.parse import unquote
 
 import requests
@@ -317,23 +317,11 @@ def fetch_daily_text() -> dict | None:
     if len(comment) > 500:
         comment = comment[:500].rstrip() + "…"
 
-    # Identificativo: ricavato dal link "giorno successivo" - 1 giorno
-    # Questo è robusto perché usa i dati dell'HTML stesso
+    # Identificativo = data italiana odierna passata dal workflow
     date_id = os.getenv("TODAY_ISO", "")
-    next_day_link = soup.select_one('#footerNextDay a')
-    if next_day_link:
-        try:
-            href = next_day_link.get("href", "")
-            parts = href.rstrip("/").split("/")
-            next_date = date(int(parts[-3]), int(parts[-2]), int(parts[-1]))
-            today_date = next_date - timedelta(days=1)
-            date_id = today_date.strftime("%Y-%m-%d")
-            print(f"  Data ricavata dal link successivo: {date_id}")
-        except Exception as e:
-            print(f"  [WARN] Impossibile ricavare data dal link: {e}")
-
     if not date_id:
         date_id = datetime.now().strftime("%Y-%m-%d")
+    print(f"  Identificativo scrittura: {date_id}")
 
     return {
         "id": date_id,
