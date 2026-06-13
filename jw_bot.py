@@ -298,9 +298,11 @@ def fetch_daily_text() -> dict | None:
         print(f"  [ERROR] Lettura {DAILY_TEXT_FILE}: {e}")
         return None
 
-    container = soup.select_one('#dailyText .tabContent')
+    # Cerca il blocco del giorno corretto tramite data esplicita
+    today = os.getenv("TODAY_ISO", datetime.now().strftime("%Y-%m-%d"))
+    container = soup.select_one(f'.tabContent[data-date^="{today}"]')
     if not container:
-        print("  [WARN] Contenitore dailyText non trovato nel file HTML.")
+        print(f"  [WARN] Contenitore per data {today} non trovato nel file HTML.")
         return None
 
     # Data testuale per il messaggio (es. "Sabato 13 giugno")
@@ -314,7 +316,7 @@ def fetch_daily_text() -> dict | None:
     # Commento
     body_p = container.select_one('div.bodyTxt p.sb')
     comment = body_p.get_text(" ", strip=True) if body_p else ""
-    
+
     # Identificativo = data italiana odierna passata dal workflow
     date_id = os.getenv("TODAY_ISO", "")
     if not date_id:
