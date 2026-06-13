@@ -12,9 +12,6 @@ TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 
-print("CHAT_ID:", CHAT_ID)
-print("GROUP_CHAT_ID:", GROUP_CHAT_ID)
-
 STATE_FILE = "jw_state.json"
 MAX_NOTIFY = 3
 BASE_URL = "https://www.jw.org"
@@ -26,6 +23,7 @@ VIDEOS_API = (
 NEWS_URL = "https://www.jw.org/it/news/"
 MAGAZINES_URL = "https://www.jw.org/it/biblioteca-digitale/riviste/"
 HOME_URL = "https://www.jw.org/it/"
+DAILY_TEXT_URL = "https://wol.jw.org/it/wol/h/r6/lp-i"
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
@@ -41,7 +39,7 @@ def send_telegram(text: str):
         print(f"  [TELEGRAM ERROR] {e}")
 
 
-def send_telegram_to(chat_id: int, text: str):
+def send_telegram_to(chat_id, text: str):
     """Invia un messaggio a un chat_id specifico."""
     try:
         requests.post(
@@ -75,7 +73,6 @@ def get_updates() -> list:
             timeout=10,
         )
         results = r.json().get("result", [])
-        # Marca subito tutti come letti per evitare duplicati alla prossima run
         if results:
             last_id = results[-1]["update_id"]
             requests.get(
@@ -112,7 +109,8 @@ def handle_commands():
                 "🎬 Nuovi video\n"
                 "📰 Nuove news\n"
                 "📚 Nuove riviste\n"
-                "🏠 Aggiornamento homepage\n\n"
+                "🏠 Aggiornamento homepage\n"
+                "📖 Scrittura del giorno\n\n"
                 "Il bot è in funzione dalle 06:00 alle 23:00.\n\n"
                 "<b>Comandi disponibili:</b>\n"
                 "/start — questo messaggio\n"
@@ -138,7 +136,8 @@ def handle_commands():
                 f"🎬 Video\n"
                 f"📰 News\n"
                 f"📚 Riviste\n"
-                f"🏠 Homepage"
+                f"🏠 Homepage\n"
+                f"📖 Scrittura del giorno"
             ))
 
 
@@ -156,7 +155,7 @@ def load_state() -> dict:
                 return state
         except Exception:
             print("  [WARN] Stato corrotto, reset.")
-    return {"videos": [], "news": [], "magazines": [], "homepage": []}
+    return {"videos": [], "news": [], "magazines": [], "homepage": [], "daily_text_id": ""}
 
 
 def save_state(state: dict):
@@ -283,6 +282,78 @@ def fetch_homepage() -> list:
     }]
 
 
+# ─── Scrittura del giorno ────────────────────────────────────────────────────
+
+def fetch_daily_text() -> dict | None:
+    """Estrae la scrittura del giorno da WOL."""
+    soup = fetch_html(DAILY_TEXT_URL)
+
+    container = soup.select_one('#dailyText .tabContent')
+    if not container:
+        print("  [WARN] Contenitore dailyText non trovato.")
+        return None
+
+    # Data
+    h2 = container.select_one('header h2')
+    date_text = h2.get_text(" ", strip=True) if h2 else ""
+
+    # Versetto
+    theme = container.select_one('p.themeScrp')
+    scripture = theme.get_text(" ", strip=True) if theme else ""
+
+    # Commento (primo paragrafo del corpo)
+    body_p = container.select_one('div.bodyTxt p.sb')
+    comment = body_p.get_text(" ", strip=True) if body_p else ""
+
+    # Tronca il commento a 300 caratteri
+    if len(comment) > 300:
+        comment = comment[:300].rstrip() + "…"
+
+    # Identificativo = data nel formato YYYY-MM-DD
+    data_date = container.get("data-date", "")
+    date_id = data_date[:10] if data_date else datetime.now().strftime("%Y-%m-%d")
+
+    return {
+        "id": date_id,
+        "date": date_text,
+        "scripture": scripture,
+        "comment": comment,
+        "url": DAILY_TEXT_URL,
+    }
+
+
+def check_daily_text(state: dict):
+    """Controlla se la scrittura del giorno è cambiata e notifica."""
+    print(f"[{datetime.now():%d/%m/%Y %H:%M}] Controllo scrittura del giorno...")
+
+    try:
+        daily = fetch_daily_text()
+    except Exception as e:
+        print(f"  [ERROR] {e}")
+        send_error("Errore nel fetch della <b>scrittura del giorno</b>", e)
+        return
+
+    if not daily:
+        return
+
+    last_id = state.get("daily_text_id", "")
+
+    if daily["id"] == last_id:
+        print(f"  Scrittura già inviata per {daily['id']}, skip.")
+        return
+
+    print(f"  Nuova scrittura del giorno: {daily['id']}")
+
+    msg = (
+        f"📖 <b>Scrittura del giorno — {daily['date']}</b>\n\n"
+        f"<i>{daily['scripture']}</i>\n\n"
+        f"{daily['comment']}\n\n"
+        f"🔗 {daily['url']}"
+    )
+    send_telegram(msg)
+    state["daily_text_id"] = daily["id"]
+
+
 # ─── Check principale ────────────────────────────────────────────────────────
 
 SECTIONS = {
@@ -295,6 +366,8 @@ SECTIONS = {
 
 def check_all():
     state = load_state()
+
+    check_daily_text(state)
 
     for key, cfg in SECTIONS.items():
         now = datetime.now().strftime("%d/%m/%Y %H:%M")
