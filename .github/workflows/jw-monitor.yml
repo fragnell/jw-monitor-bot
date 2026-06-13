@@ -50,8 +50,8 @@ jobs:
 
       - name: Fetch meetings page via curl
         run: |
-          # Estrai il link delle adunanze dalla home WOL
-          MEETINGS_URL=$(grep -o 'href="/it/wol/meetings/[^"]*"' wol_page.html | head -1 | sed 's/href="//;s/"//')
+          # Estrai il link delle adunanze con numero settimana (es. /meetings/r6/lp-i/2026/24)
+          MEETINGS_URL=$(grep -o 'href="/it/wol/meetings/[^"]*[0-9]"' wol_page.html | head -1 | sed 's/href="//;s/"//')
           if [ -z "$MEETINGS_URL" ]; then
             echo "Link adunanze non trovato, skip."
             touch wol_meetings.html
@@ -70,7 +70,7 @@ jobs:
               -o wol_meetings.html
             echo "File size wol_meetings: $(wc -c < wol_meetings.html) bytes"
 
-            # Estrai il link della Torre di Guardia dalla pagina adunanze
+            # Estrai il link della Torre di Guardia (secondo link /wol/d/)
             WT_URL=$(grep -o 'href="/it/wol/d/[^"]*"' wol_meetings.html | tail -1 | sed 's/href="//;s/"//')
             if [ -z "$WT_URL" ]; then
               echo "Link Torre di Guardia non trovato, skip."
