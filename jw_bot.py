@@ -4,12 +4,12 @@ import os
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
-ROME_TZ = ZoneInfo("Europe/Rome")
 from urllib.parse import unquote
 
 import requests
 from bs4 import BeautifulSoup
+
+ROME_TZ = ZoneInfo("Europe/Rome")
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -135,7 +135,7 @@ def handle_commands():
             ))
 
         elif text.startswith("/status"):
-            now = datetime.now().strftime("%d/%m/%Y %H:%M")
+            now = datetime.now(tz=ROME_TZ).strftime("%d/%m/%Y %H:%M")
             send_telegram_to(chat_id, (
                 f"✅ <b>JW Monitor attivo</b>\n\n"
                 f"🕐 Ultimo controllo: {now}\n"
@@ -185,12 +185,12 @@ def load_log() -> list:
 
 
 def save_log(log: list):
-    # Mantieni solo gli ultimi 365 giorni
-    cutoff = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    """Mantieni solo gli ultimi 365 giorni."""
+    cutoff = datetime.now(tz=ROME_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
     cutoff = cutoff.replace(year=cutoff.year - 1)
     filtered = [
         entry for entry in log
-        if datetime.strptime(entry["date"], "%Y-%m-%d %H:%M") >= cutoff
+        if datetime.strptime(entry["date"], "%Y-%m-%d %H:%M").replace(tzinfo=ROME_TZ) >= cutoff
     ]
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         json.dump(filtered, f, indent=2, ensure_ascii=False)
@@ -340,29 +340,22 @@ def fetch_daily_text() -> dict | None:
         print(f"  [ERROR] Lettura {DAILY_TEXT_FILE}: {e}")
         return None
 
-    # Cerca il blocco del giorno corretto tramite data esplicita
-    today = os.getenv("TODAY_ISO", datetime.now().strftime("%Y-%m-%d"))
+    today = os.getenv("TODAY_ISO", datetime.now(tz=ROME_TZ).strftime("%Y-%m-%d"))
     container = soup.select_one(f'.tabContent[data-date^="{today}"]')
     if not container:
         print(f"  [WARN] Contenitore per data {today} non trovato nel file HTML.")
         return None
 
-    # Data testuale per il messaggio (es. "Sabato 13 giugno")
     h2 = container.select_one('header h2')
     date_text = h2.get_text(" ", strip=True) if h2 else ""
 
-    # Versetto
     theme = container.select_one('p.themeScrp')
     scripture = theme.get_text(" ", strip=True) if theme else ""
 
-    # Commento
     body_p = container.select_one('div.bodyTxt p.sb')
     comment = body_p.get_text(" ", strip=True) if body_p else ""
 
-    # Identificativo = data italiana odierna passata dal workflow
-    date_id = os.getenv("TODAY_ISO", "")
-    if not date_id:
-        date_id = datetime.now().strftime("%Y-%m-%d")
+    date_id = os.getenv("TODAY_ISO", datetime.now(tz=ROME_TZ).strftime("%Y-%m-%d"))
     print(f"  Identificativo scrittura: {date_id}")
 
     return {
@@ -376,7 +369,7 @@ def fetch_daily_text() -> dict | None:
 
 def check_daily_text(state: dict, log: list):
     """Controlla se la scrittura del giorno è cambiata e notifica."""
-    print(f"[{datetime.now():%d/%m/%Y %H:%M}] Controllo scrittura del giorno...")
+    print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo scrittura del giorno...")
 
     try:
         daily = fetch_daily_text()
@@ -422,28 +415,23 @@ def fetch_watchtower() -> dict | None:
         print(f"  [ERROR] Lettura {WATCHTOWER_FILE}: {e}")
         return None
 
-    # Titolo articolo
     title_el = soup.select_one('h1')
     title = title_el.get_text(" ", strip=True) if title_el else ""
 
-    # Versetto tema
     theme_el = soup.select_one('p.themeScrp')
     theme = theme_el.get_text(" ", strip=True) if theme_el else ""
 
-    # Settimana (es. "8-14 giugno") — dal file adunanze
     week = ""
     if os.path.exists(MEETINGS_FILE):
         try:
             with open(MEETINGS_FILE, "r", encoding="utf-8") as f:
                 soup_m = BeautifulSoup(f.read(), "html.parser")
-            # Il primo link /wol/d/ contiene la settimana nel testo
             links = soup_m.select('a[href*="/wol/d/"]')
             if links:
                 week = links[0].get_text(" ", strip=True).split("\n")[0].strip()
         except Exception:
             pass
 
-    # Testo "In questo articolo"
     synopsis = ""
     refs = soup.select('p.pubRefs')
     for i, p in enumerate(refs):
@@ -452,10 +440,7 @@ def fetch_watchtower() -> dict | None:
                 synopsis = refs[i + 1].get_text(" ", strip=True)
             break
 
-    # URL articolo dalla variabile d'ambiente passata dal workflow
     url = os.getenv("WATCHTOWER_URL", "https://wol.jw.org/it/wol/meetings/r6/lp-i")
-
-    # Identificativo = URL articolo (stabile per tutta la settimana)
     article_id = url.split("/wol/d/")[-1] if "/wol/d/" in url else ""
 
     if not title or not article_id:
@@ -474,12 +459,11 @@ def fetch_watchtower() -> dict | None:
 
 def check_watchtower(state: dict, log: list):
     """Invia la notifica Torre di Guardia solo il lunedì."""
-    # Controlla se è lunedì
-    if datetime.now(tz=ROME_TZ).weekday() != 99:
-        print(f"[{datetime.now():%d/%m/%Y %H:%M}] Torre di Guardia: non è lunedì, skip.")
+    if datetime.now(tz=ROME_TZ).weekday() != 99:  # 99 = test (0 = lunedì in produzione)
+        print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Torre di Guardia: non è lunedì, skip.")
         return
 
-    print(f"[{datetime.now():%d/%m/%Y %H:%M}] Controllo Torre di Guardia settimanale...")
+    print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo Torre di Guardia settimanale...")
 
     try:
         wt = fetch_watchtower()
@@ -529,7 +513,7 @@ def check_all():
     check_watchtower(state, log)
 
     for key, cfg in SECTIONS.items():
-        now = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now = datetime.now(tz=ROME_TZ).strftime("%d/%m/%Y %H:%M")
         print(f"[{now}] Controllo {key}...")
 
         try:
