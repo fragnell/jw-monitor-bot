@@ -68,6 +68,8 @@ jobs:
 
           # Estrai il link della Torre di Guardia (secondo link /wol/d/)
           WT_URL=$(grep -o 'href="/it/wol/d/[^"]*"' wol_meetings.html | tail -1 | sed 's/href="//;s/"//')
+          # Estrai il link adunanza infrasettimanale (primo link /wol/d/)
+          MEETING_URL=$(grep -o 'href="/it/wol/d/[^"]*"' wol_meetings.html | head -1 | sed 's/href="//;s/"//')
           if [ -z "$WT_URL" ]; then
             echo "Link Torre di Guardia non trovato, skip."
             touch wol_watchtower.html
@@ -85,6 +87,24 @@ jobs:
               "${FULL_WT_URL}" \
               -o wol_watchtower.html
             echo "File size wol_watchtower: $(wc -c < wol_watchtower.html) bytes"
+          fi
+          if [ -z "$MEETING_URL" ]; then
+            echo "Link adunanza infrasettimanale non trovato, skip."
+            touch wol_meetings_detail.html
+          else
+            FULL_MEETING_URL="https://wol.jw.org${MEETING_URL}"
+            echo "URL adunanza: ${FULL_MEETING_URL}"
+            echo "MEETING_URL=${FULL_MEETING_URL}" >> $GITHUB_ENV
+            curl -s \
+              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+              -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
+              -H "Accept-Language: it-IT,it;q=0.9" \
+              -H "Accept-Encoding: gzip, deflate, br" \
+              --max-time 30 \
+              --compressed \
+              "${FULL_MEETING_URL}" \
+              -o wol_meetings_detail.html
+            echo "File size wol_meetings_detail: $(wc -c < wol_meetings_detail.html) bytes"
           fi
 
       - name: Run bot
