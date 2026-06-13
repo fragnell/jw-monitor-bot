@@ -29,6 +29,8 @@ MAGAZINES_URL = "https://www.jw.org/it/biblioteca-digitale/riviste/"
 HOME_URL = "https://www.jw.org/it/"
 DAILY_TEXT_URL = "https://wol.jw.org/it/wol/h/r6/lp-i"
 DAILY_TEXT_FILE = "wol_page.html"
+MEETINGS_FILE = "wol_meetings.html"
+WATCHTOWER_FILE = "wol_watchtower.html"
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
@@ -115,7 +117,8 @@ def handle_commands():
                 "📰 Nuove news\n"
                 "📚 Nuove riviste\n"
                 "🏠 Aggiornamento homepage\n"
-                "📖 Scrittura del giorno\n\n"
+                "📖 Scrittura del giorno\n"
+                "📋 Studio Torre di Guardia (ogni lunedì)\n\n"
                 "Il bot è in funzione dalle 06:00 alle 23:00.\n\n"
                 "<b>Comandi disponibili:</b>\n"
                 "/start — questo messaggio\n"
@@ -142,7 +145,8 @@ def handle_commands():
                 f"📰 News\n"
                 f"📚 Riviste\n"
                 f"🏠 Homepage\n"
-                f"📖 Scrittura del giorno"
+                f"📖 Scrittura del giorno\n"
+                f"📋 Studio Torre di Guardia (ogni lunedì)"
             ))
 
 
@@ -160,7 +164,7 @@ def load_state() -> dict:
                 return state
         except Exception:
             print("  [WARN] Stato corrotto, reset.")
-    return {"videos": [], "news": [], "magazines": [], "homepage": [], "daily_text_id": ""}
+    return {"videos": [], "news": [], "magazines": [], "homepage": [], "daily_text_id": "", "watchtower_id": ""}
 
 
 def save_state(state: dict):
@@ -403,6 +407,110 @@ def check_daily_text(state: dict, log: list):
     state["daily_text_id"] = daily["id"]
 
 
+# ─── Torre di Guardia settimanale ────────────────────────────────────────────
+
+def fetch_watchtower() -> dict | None:
+    """Estrae titolo e testo 'In questo articolo' dalla Torre di Guardia."""
+    if not os.path.exists(WATCHTOWER_FILE):
+        print(f"  [WARN] {WATCHTOWER_FILE} non trovato, skip.")
+        return None
+
+    try:
+        with open(WATCHTOWER_FILE, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
+    except Exception as e:
+        print(f"  [ERROR] Lettura {WATCHTOWER_FILE}: {e}")
+        return None
+
+    # Titolo articolo
+    title_el = soup.select_one('h1')
+    title = title_el.get_text(" ", strip=True) if title_el else ""
+
+    # Versetto tema
+    theme_el = soup.select_one('p.themeScrp')
+    theme = theme_el.get_text(" ", strip=True) if theme_el else ""
+
+    # Settimana (es. "8-14 giugno") — dal file adunanze
+    week = ""
+    if os.path.exists(MEETINGS_FILE):
+        try:
+            with open(MEETINGS_FILE, "r", encoding="utf-8") as f:
+                soup_m = BeautifulSoup(f.read(), "html.parser")
+            # Il primo link /wol/d/ contiene la settimana nel testo
+            links = soup_m.select('a[href*="/wol/d/"]')
+            if links:
+                week = links[0].get_text(" ", strip=True).split("\n")[0].strip()
+        except Exception:
+            pass
+
+    # Testo "In questo articolo"
+    synopsis = ""
+    refs = soup.select('p.pubRefs')
+    for i, p in enumerate(refs):
+        if "IN QUESTO ARTICOLO" in p.get_text():
+            if i + 1 < len(refs):
+                synopsis = refs[i + 1].get_text(" ", strip=True)
+            break
+
+    # URL articolo dalla variabile d'ambiente passata dal workflow
+    url = os.getenv("WATCHTOWER_URL", "https://wol.jw.org/it/wol/meetings/r6/lp-i")
+
+    # Identificativo = URL articolo (stabile per tutta la settimana)
+    article_id = url.split("/wol/d/")[-1] if "/wol/d/" in url else ""
+
+    if not title or not article_id:
+        print("  [WARN] Titolo o ID Torre di Guardia non trovati.")
+        return None
+
+    return {
+        "id": article_id,
+        "title": title,
+        "theme": theme,
+        "synopsis": synopsis,
+        "week": week,
+        "url": url,
+    }
+
+
+def check_watchtower(state: dict, log: list):
+    """Invia la notifica Torre di Guardia solo il lunedì."""
+    # Controlla se è lunedì
+    if datetime.now(tz=ROME_TZ).weekday() != 0:
+        print(f"[{datetime.now():%d/%m/%Y %H:%M}] Torre di Guardia: non è lunedì, skip.")
+        return
+
+    print(f"[{datetime.now():%d/%m/%Y %H:%M}] Controllo Torre di Guardia settimanale...")
+
+    try:
+        wt = fetch_watchtower()
+    except Exception as e:
+        print(f"  [ERROR] {e}")
+        send_error("Errore nel fetch della <b>Torre di Guardia</b>", e)
+        return
+
+    if not wt:
+        return
+
+    last_id = state.get("watchtower_id", "")
+
+    if wt["id"] == last_id:
+        print(f"  Torre di Guardia già inviata per {wt['id']}, skip.")
+        return
+
+    print(f"  Nuova Torre di Guardia: {wt['id']}")
+
+    msg = (
+        f"📖 <b>Studio Torre di Guardia — {wt['week']}</b>\n\n"
+        f"<b>{wt['title']}</b>\n\n"
+        f"<i>{wt['theme']}</i>\n\n"
+        f"<b>In questo articolo:</b>\n{wt['synopsis']}\n\n"
+        f"🔗 {wt['url']}"
+    )
+    send_telegram(msg)
+    log_event(log, "watchtower", wt["id"], wt["title"])
+    state["watchtower_id"] = wt["id"]
+
+
 # ─── Check principale ────────────────────────────────────────────────────────
 
 SECTIONS = {
@@ -418,6 +526,7 @@ def check_all():
     log = load_log()
 
     check_daily_text(state, log)
+    check_watchtower(state, log)
 
     for key, cfg in SECTIONS.items():
         now = datetime.now().strftime("%d/%m/%Y %H:%M")
