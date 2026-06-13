@@ -2,8 +2,6 @@ name: JW Monitor
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/30 5-19 * * *'
 
 concurrency:
   group: jw-monitor
@@ -36,16 +34,16 @@ jobs:
 
       - name: Fetch daily text via curl
         run: |
+          TODAY=$(TZ="Europe/Rome" date +%Y/%-m/%-d)
+          echo "Data italiana: ${TODAY}"
           curl -s \
             -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
             -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
             -H "Accept-Language: it-IT,it;q=0.9" \
             -H "Accept-Encoding: gzip, deflate, br" \
-            -H "Cache-Control: no-cache" \
-            -H "Pragma: no-cache" \
             --max-time 30 \
             --compressed \
-            "https://wol.jw.org/it/wol/h/r6/lp-i" \
+            "https://wol.jw.org/it/wol/h/r6/lp-i/${TODAY}" \
             -o wol_page.html
           echo "File size: $(wc -c < wol_page.html) bytes"
 
