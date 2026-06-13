@@ -13,6 +13,7 @@ CHAT_ID = os.getenv("CHAT_ID")
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 
 STATE_FILE = "jw_state.json"
+LOG_FILE = "jw_log.json"
 MAX_NOTIFY = 3
 BASE_URL = "https://www.jw.org"
 
@@ -162,6 +163,40 @@ def load_state() -> dict:
 def save_state(state: dict):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+# ─── Log eventi ──────────────────────────────────────────────────────────────
+
+def load_log() -> list:
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            print("  [WARN] Log corrotto, reset.")
+    return []
+
+
+def save_log(log: list):
+    # Mantieni solo gli ultimi 365 giorni
+    cutoff = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    cutoff = cutoff.replace(year=cutoff.year - 1)
+    filtered = [
+        entry for entry in log
+        if datetime.strptime(entry["date"], "%Y-%m-%d %H:%M") >= cutoff
+    ]
+    with open(LOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(filtered, f, indent=2, ensure_ascii=False)
+
+
+def log_event(log: list, event_type: str, item_id: str, title: str):
+    """Aggiunge un evento al log."""
+    log.append({
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "type": event_type,
+        "id": item_id,
+        "title": title,
+    })
 
 
 # ─── Fetch ───────────────────────────────────────────────────────────────────
@@ -332,7 +367,7 @@ def fetch_daily_text() -> dict | None:
     }
 
 
-def check_daily_text(state: dict):
+def check_daily_text(state: dict, log: list):
     """Controlla se la scrittura del giorno è cambiata e notifica."""
     print(f"[{datetime.now():%d/%m/%Y %H:%M}] Controllo scrittura del giorno...")
 
@@ -361,6 +396,7 @@ def check_daily_text(state: dict):
         f"🔗 {daily['url']}"
     )
     send_telegram(msg)
+    log_event(log, "daily_text", daily["id"], daily["scripture"])
     state["daily_text_id"] = daily["id"]
 
 
@@ -376,8 +412,9 @@ SECTIONS = {
 
 def check_all():
     state = load_state()
+    log = load_log()
 
-    check_daily_text(state)
+    check_daily_text(state, log)
 
     for key, cfg in SECTIONS.items():
         now = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -409,11 +446,13 @@ def check_all():
                 f"🔗 {item['url']}"
             )
             send_telegram(msg)
+            log_event(log, key, item["id"], item["title"])
             time.sleep(1)
 
         state[key] = [x["id"] for x in items][:500]
 
     save_state(state)
+    save_log(log)
 
 
 # ─── Main ────────────────────────────────────────────────────────────────────
