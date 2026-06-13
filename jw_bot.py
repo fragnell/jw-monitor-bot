@@ -319,9 +319,12 @@ def fetch_daily_text() -> dict | None:
     if len(comment) > 300:
         comment = comment[:300].rstrip() + "…"
 
-    # Identificativo = data nel formato YYYY-MM-DD
-    data_date = container.get("data-date", "")
-    date_id = data_date[:10] if data_date else datetime.now().strftime("%Y-%m-%d")
+    # Identificativo = data passata dal workflow come variabile d'ambiente
+    # Fallback: data-date dall'HTML, poi data di sistema
+    date_id = os.getenv("TODAY_ISO", "")
+    if not date_id:
+        data_date = container.get("data-date", "")
+        date_id = data_date[:10] if data_date else datetime.now().strftime("%Y-%m-%d")
 
     return {
         "id": date_id,
