@@ -428,7 +428,19 @@ def fetch_watchtower() -> dict | None:
                 soup_m = BeautifulSoup(f.read(), "html.parser")
             links = soup_m.select('a[href*="/wol/d/"]')
             if links:
-                week = links[0].get_text(" ", strip=True).split("\n")[0].strip()
+                # Il testo del primo link contiene "8-14 giugno\nGuida per..." — prendiamo solo la prima riga
+                raw = links[0].get_text(" ", strip=True)
+                week = raw.split("\n")[0].strip()
+                # Ulteriore pulizia: prendi solo fino al primo carattere non-data
+                # es. "8-14 giugno Guida per..." → "8-14 giugno"
+                parts = week.split()
+                week_parts = []
+                for p in parts:
+                    week_parts.append(p)
+                    # Fermati dopo il mese (parola senza numeri dopo la data)
+                    if p[0].isalpha() and len(p) > 2:
+                        break
+                week = " ".join(week_parts)
         except Exception:
             pass
 
