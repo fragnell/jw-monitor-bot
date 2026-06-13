@@ -314,9 +314,7 @@ def fetch_daily_text() -> dict | None:
     # Commento
     body_p = container.select_one('div.bodyTxt p.sb')
     comment = body_p.get_text(" ", strip=True) if body_p else ""
-    if len(comment) > 500:
-        comment = comment[:500].rstrip() + "…"
-
+    
     # Identificativo = data italiana odierna passata dal workflow
     date_id = os.getenv("TODAY_ISO", "")
     if not date_id:
