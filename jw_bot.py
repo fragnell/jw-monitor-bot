@@ -506,8 +506,9 @@ def fetch_meeting() -> dict | None:
 
 def check_meeting(state: dict, log: list):
     """Invia la notifica adunanza infrasettimanale solo il lunedì."""
-    if False:  # test — in produzione: datetime.now(tz=ROME_TZ).weekday() != 0
-        print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Adunanza: non è lunedì, skip.")
+    now = datetime.now(tz=ROME_TZ)
+    if now.weekday() != 0 or now.hour != 9:
+        print(f"[{now:%d/%m/%Y %H:%M}] Adunanza: non è lunedì alle 9:00, skip.")
         return
 
     print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo adunanza infrasettimanale...")
@@ -615,8 +616,9 @@ def fetch_watchtower() -> dict | None:
 
 def check_watchtower(state: dict, log: list):
     """Invia la notifica Torre di Guardia solo il lunedì."""
-    if False:  # test — in produzione: datetime.now(tz=ROME_TZ).weekday() != 0
-        print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Torre di Guardia: non è lunedì, skip.")
+    now = datetime.now(tz=ROME_TZ)
+    if now.weekday() != 3 or now.hour != 9:
+        print(f"[{now:%d/%m/%Y %H:%M}] Torre di Guardia: non è giovedì alle 9:00, skip.")
         return
 
     print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo Torre di Guardia settimanale...")
