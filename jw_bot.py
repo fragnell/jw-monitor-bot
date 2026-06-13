@@ -2,7 +2,7 @@
 import json
 import os
 import time
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from urllib.parse import unquote
 
 import requests
@@ -303,7 +303,7 @@ def fetch_daily_text() -> dict | None:
         print("  [WARN] Contenitore dailyText non trovato nel file HTML.")
         return None
 
-    # Data
+    # Data testuale per il messaggio (es. "Sabato 13 giugno")
     h2 = container.select_one('header h2')
     date_text = h2.get_text(" ", strip=True) if h2 else ""
 
@@ -311,20 +311,29 @@ def fetch_daily_text() -> dict | None:
     theme = container.select_one('p.themeScrp')
     scripture = theme.get_text(" ", strip=True) if theme else ""
 
-    # Commento (primo paragrafo del corpo)
+    # Commento
     body_p = container.select_one('div.bodyTxt p.sb')
     comment = body_p.get_text(" ", strip=True) if body_p else ""
+    if len(comment) > 500:
+        comment = comment[:500].rstrip() + "…"
 
-    # Tronca il commento a 300 caratteri
-    if len(comment) > 300:
-        comment = comment[:300].rstrip() + "…"
-
-    # Identificativo = data passata dal workflow come variabile d'ambiente
-    # Fallback: data-date dall'HTML, poi data di sistema
+    # Identificativo: ricavato dal link "giorno successivo" - 1 giorno
+    # Questo è robusto perché usa i dati dell'HTML stesso
     date_id = os.getenv("TODAY_ISO", "")
+    next_day_link = soup.select_one('#footerNextDay a')
+    if next_day_link:
+        try:
+            href = next_day_link.get("href", "")
+            parts = href.rstrip("/").split("/")
+            next_date = date(int(parts[-3]), int(parts[-2]), int(parts[-1]))
+            today_date = next_date - timedelta(days=1)
+            date_id = today_date.strftime("%Y-%m-%d")
+            print(f"  Data ricavata dal link successivo: {date_id}")
+        except Exception as e:
+            print(f"  [WARN] Impossibile ricavare data dal link: {e}")
+
     if not date_id:
-        data_date = container.get("data-date", "")
-        date_id = data_date[:10] if data_date else datetime.now().strftime("%Y-%m-%d")
+        date_id = datetime.now().strftime("%Y-%m-%d")
 
     return {
         "id": date_id,
