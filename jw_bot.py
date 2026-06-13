@@ -24,6 +24,7 @@ NEWS_URL = "https://www.jw.org/it/news/"
 MAGAZINES_URL = "https://www.jw.org/it/biblioteca-digitale/riviste/"
 HOME_URL = "https://www.jw.org/it/"
 DAILY_TEXT_URL = "https://wol.jw.org/it/wol/h/r6/lp-i"
+DAILY_TEXT_FILE = "wol_page.html"
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
@@ -285,26 +286,21 @@ def fetch_homepage() -> list:
 # ─── Scrittura del giorno ────────────────────────────────────────────────────
 
 def fetch_daily_text() -> dict | None:
-    """Estrae la scrittura del giorno da WOL con retry automatico."""
-    soup = None
-    for attempt in range(3):
-        try:
-            r = requests.get(DAILY_TEXT_URL, headers=HEADERS, timeout=40)
-            r.raise_for_status()
-            soup = BeautifulSoup(r.text, "html.parser")
-            break
-        except Exception as e:
-            print(f"  [WARN] Tentativo {attempt + 1}/3 fallito: {e}")
-            if attempt < 2:
-                time.sleep(5)
+    """Legge la scrittura del giorno dal file HTML scaricato da curl."""
+    if not os.path.exists(DAILY_TEXT_FILE):
+        print(f"  [WARN] {DAILY_TEXT_FILE} non trovato, skip.")
+        return None
 
-    if not soup:
-        print("  [ERROR] Tutti i tentativi falliti per WOL.")
+    try:
+        with open(DAILY_TEXT_FILE, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
+    except Exception as e:
+        print(f"  [ERROR] Lettura {DAILY_TEXT_FILE}: {e}")
         return None
 
     container = soup.select_one('#dailyText .tabContent')
     if not container:
-        print("  [WARN] Contenitore dailyText non trovato.")
+        print("  [WARN] Contenitore dailyText non trovato nel file HTML.")
         return None
 
     # Data
