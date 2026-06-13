@@ -41,6 +41,8 @@ jobs:
             -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
             -H "Accept-Language: it-IT,it;q=0.9" \
             -H "Accept-Encoding: gzip, deflate, br" \
+            -H "Cache-Control: no-cache" \
+            -H "Pragma: no-cache" \
             --max-time 30 \
             --compressed \
             "https://wol.jw.org/it/wol/h/r6/lp-i" \
