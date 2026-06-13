@@ -3,6 +3,9 @@ import json
 import os
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+ROME_TZ = ZoneInfo("Europe/Rome")
 from urllib.parse import unquote
 
 import requests
@@ -190,9 +193,9 @@ def save_log(log: list):
 
 
 def log_event(log: list, event_type: str, item_id: str, title: str):
-    """Aggiunge un evento al log."""
+    """Aggiunge un evento al log con ora italiana."""
     log.append({
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "date": datetime.now(tz=ROME_TZ).strftime("%Y-%m-%d %H:%M"),
         "type": event_type,
         "id": item_id,
         "title": title,
