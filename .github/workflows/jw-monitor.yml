@@ -35,10 +35,8 @@ jobs:
       - name: Fetch daily text via curl
         run: |
           TODAY=$(TZ="Europe/Rome" date +%Y/%-m/%-d)
-          TOMORROW=$(TZ="Europe/Rome" date -d "+1 day" +%Y/%-m/%-d)
-          echo "Data italiana: ${TODAY}"
-          echo "Data +1: ${TOMORROW}"
           echo "TODAY_ISO=$(TZ="Europe/Rome" date +%Y-%m-%d)" >> $GITHUB_ENV
+          echo "Data italiana: ${TODAY}"
           curl -s \
             -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
             -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
@@ -46,7 +44,7 @@ jobs:
             -H "Accept-Encoding: gzip, deflate, br" \
             --max-time 30 \
             --compressed \
-            "https://wol.jw.org/it/wol/h/r6/lp-i/${TOMORROW}" \
+            "https://wol.jw.org/it/wol/h/r6/lp-i/${TODAY}" \
             -o wol_page.html
           echo "File size: $(wc -c < wol_page.html) bytes"
 
