@@ -30,6 +30,8 @@ HOME_URL = "https://www.jw.org/it/"
 DAILY_TEXT_URL = "https://wol.jw.org/it/wol/h/r6/lp-i"
 DAILY_TEXT_FILE = "wol_page.html"
 MEETINGS_FILE = "wol_meetings.html"
+MEETING_FILE = "wol_meetings_detail.html"
+MEETING_URL_ENV = "MEETING_URL"
 WATCHTOWER_FILE = "wol_watchtower.html"
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -118,7 +120,8 @@ def handle_commands():
                 "📚 Nuove riviste\n"
                 "🏠 Aggiornamento homepage\n"
                 "📖 Scrittura del giorno\n"
-                "📋 Studio Torre di Guardia (ogni lunedì)\n\n"
+                "📋 Studio Torre di Guardia (ogni giovedì alle 9:00)\n"
+                "📅 Adunanza infrasettimanale (ogni lunedì alle 9:00)\n\n"
                 "Il bot è in funzione dalle 06:00 alle 23:00.\n\n"
                 "<b>Comandi disponibili:</b>\n"
                 "/start — questo messaggio\n"
@@ -146,7 +149,8 @@ def handle_commands():
                 f"📚 Riviste\n"
                 f"🏠 Homepage\n"
                 f"📖 Scrittura del giorno\n"
-                f"📋 Studio Torre di Guardia (ogni lunedì)"
+                f"📅 Adunanza infrasettimanale (lunedì alle 9:00)\n"
+                f"📋 Studio Torre di Guardia (giovedì alle 9:00)"
             ))
 
 
@@ -209,7 +213,7 @@ def log_event(log: list, event_type: str, item_id: str, title: str):
 # ─── Fetch ───────────────────────────────────────────────────────────────────
 
 def fetch_html(url: str) -> BeautifulSoup:
-    r = requests.get(url, headers=HEADERS, timeout=20)
+    r = requests.get(url, headers=HEADERS, timeout=30)
     r.raise_for_status()
     return BeautifulSoup(r.text, "html.parser")
 
@@ -217,7 +221,7 @@ def fetch_html(url: str) -> BeautifulSoup:
 # ─── Video ───────────────────────────────────────────────────────────────────
 
 def fetch_videos() -> list:
-    data = requests.get(VIDEOS_API, headers=HEADERS, timeout=20).json()
+    data = requests.get(VIDEOS_API, headers=HEADERS, timeout=30).json()
     items = []
     for video in data["category"]["media"]:
         guid = video.get("guid")
@@ -400,12 +404,7 @@ def check_daily_text(state: dict, log: list):
     state["daily_text_id"] = daily["id"]
 
 
-
 # ─── Adunanza infrasettimanale ───────────────────────────────────────────────
-
-MEETING_FILE = "wol_meetings_detail.html"
-MEETING_URL_ENV = "MEETING_URL"
-
 
 def fetch_meeting() -> dict | None:
     """Estrae i dati dell'adunanza infrasettimanale."""
@@ -420,7 +419,6 @@ def fetch_meeting() -> dict | None:
         print(f"  [ERROR] Lettura {MEETING_FILE}: {e}")
         return None
 
-    # Settimana dal file adunanze
     week = ""
     if os.path.exists(MEETINGS_FILE):
         try:
@@ -439,7 +437,6 @@ def fetch_meeting() -> dict | None:
         except Exception:
             pass
 
-    # Lettura biblica — primo h2 senza colore
     bible_reading = ""
     for h2 in soup.select('h2'):
         cls = h2.get("class", [])
@@ -448,19 +445,16 @@ def fetch_meeting() -> dict | None:
             bible_reading = h2.get_text(" ", strip=True).title()
             break
 
-    # Tema Tesori — primo h3 con colore teal
     treasures_theme = ""
     for h3 in soup.select('h3'):
         cls = " ".join(h3.get("class", []))
         if "teal" in cls:
             text = h3.get_text(" ", strip=True)
-            # Rimuovi il numero iniziale (es. "1. L'esempio...")
             if ". " in text:
                 text = text.split(". ", 1)[1]
             treasures_theme = text
             break
 
-    # Parti Vita cristiana — h3 con colore maroon (escluso cantici)
     christian_life_parts = []
     for h3 in soup.select('h3'):
         cls = " ".join(h3.get("class", []))
@@ -470,19 +464,16 @@ def fetch_meeting() -> dict | None:
                 text = text.split(". ", 1)[1]
             christian_life_parts.append(text)
 
-    # Studio biblico — cerca testo e riferimento libro
     study_ref = ""
     for h3 in soup.select('h3'):
         if "Studio biblico" in h3.get_text():
             section = h3.find_parent('li') or h3.find_parent()
             if section:
                 pc_links = section.select('a[href*="/wol/pc/"]')
-                # Penultimo link = riferimento libro (es. "lfb capp. 92-93")
                 if len(pc_links) >= 2:
                     study_ref = pc_links[-2].get_text(" ", strip=True)
             break
 
-    # Aggiorna ultima parte con riferimento
     if christian_life_parts and study_ref:
         last = christian_life_parts[-1]
         christian_life_parts[-1] = f"{last} ({study_ref})"
@@ -505,13 +496,13 @@ def fetch_meeting() -> dict | None:
 
 
 def check_meeting(state: dict, log: list):
-    """Invia la notifica adunanza infrasettimanale solo il lunedì."""
+    """Invia la notifica adunanza infrasettimanale solo il lunedì alle 9:00."""
     now = datetime.now(tz=ROME_TZ)
     if now.weekday() != 0 or now.hour != 9:
         print(f"[{now:%d/%m/%Y %H:%M}] Adunanza: non è lunedì alle 9:00, skip.")
         return
 
-    print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo adunanza infrasettimanale...")
+    print(f"[{now:%d/%m/%Y %H:%M}] Controllo adunanza infrasettimanale...")
 
     try:
         meeting = fetch_meeting()
@@ -573,16 +564,11 @@ def fetch_watchtower() -> dict | None:
                 soup_m = BeautifulSoup(f.read(), "html.parser")
             links = soup_m.select('a[href*="/wol/d/"]')
             if links:
-                # Il testo del primo link contiene "8-14 giugno\nGuida per..." — prendiamo solo la prima riga
                 raw = links[0].get_text(" ", strip=True)
-                week = raw.split("\n")[0].strip()
-                # Ulteriore pulizia: prendi solo fino al primo carattere non-data
-                # es. "8-14 giugno Guida per..." → "8-14 giugno"
                 parts = week.split()
                 week_parts = []
-                for p in parts:
+                for p in raw.split():
                     week_parts.append(p)
-                    # Fermati dopo il mese (parola senza numeri dopo la data)
                     if p[0].isalpha() and len(p) > 2:
                         break
                 week = " ".join(week_parts)
@@ -615,13 +601,13 @@ def fetch_watchtower() -> dict | None:
 
 
 def check_watchtower(state: dict, log: list):
-    """Invia la notifica Torre di Guardia solo il lunedì."""
+    """Invia la notifica Torre di Guardia solo il giovedì alle 9:00."""
     now = datetime.now(tz=ROME_TZ)
     if now.weekday() != 3 or now.hour != 9:
         print(f"[{now:%d/%m/%Y %H:%M}] Torre di Guardia: non è giovedì alle 9:00, skip.")
         return
 
-    print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo Torre di Guardia settimanale...")
+    print(f"[{now:%d/%m/%Y %H:%M}] Controllo Torre di Guardia settimanale...")
 
     try:
         wt = fetch_watchtower()
@@ -671,15 +657,22 @@ def check_all():
     check_meeting(state, log)
     check_watchtower(state, log)
 
+    consecutive_errors = state.get("consecutive_errors", {})
+
     for key, cfg in SECTIONS.items():
         now = datetime.now(tz=ROME_TZ).strftime("%d/%m/%Y %H:%M")
         print(f"[{now}] Controllo {key}...")
 
         try:
             items = cfg["fetch"]()
+            consecutive_errors[key] = 0
         except Exception as e:
-            print(f"  [ERROR] {e}")
-            send_error(f"Errore nel fetch di <b>{key}</b>", e)
+            count = consecutive_errors.get(key, 0) + 1
+            consecutive_errors[key] = count
+            print(f"  [ERROR] {e} (errore #{count})")
+            if count >= 3:
+                send_error(f"Errore persistente nel fetch di <b>{key}</b> ({count} volte di fila)", e)
+                consecutive_errors[key] = 0
             continue
 
         print(f"  Trovati: {len(items)}")
@@ -706,6 +699,7 @@ def check_all():
 
         state[key] = [x["id"] for x in items][:500]
 
+    state["consecutive_errors"] = consecutive_errors
     save_state(state)
     save_log(log)
 
