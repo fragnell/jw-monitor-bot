@@ -400,7 +400,6 @@ def check_daily_text(state: dict, log: list):
         f"🔗 {daily['url']}"
     )
     send_telegram(msg)
-    log_event(log, "daily_text", daily["id"], daily["scripture"])
     state["daily_text_id"] = daily["id"]
 
 
@@ -532,7 +531,6 @@ def check_meeting(state: dict, log: list):
         f"🔗 {meeting['url']}"
     )
     send_telegram(msg)
-    log_event(log, "meeting", meeting["id"], f"Adunanza {meeting['week']}")
     state["meeting_id"] = meeting["id"]
 
 
@@ -635,7 +633,6 @@ def check_watchtower(state: dict, log: list):
         f"🔗 {wt['url']}"
     )
     send_telegram(msg)
-    log_event(log, "watchtower", wt["id"], wt["title"])
     state["watchtower_id"] = wt["id"]
 
 
