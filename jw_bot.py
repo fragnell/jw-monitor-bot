@@ -334,36 +334,32 @@ def fetch_homepage() -> list:
 def fetch_featured() -> list:
     soup = fetch_html(HOME_URL)
 
-    raw_html = str(soup)
-    print(f"  [DEBUG] Lunghezza HTML: {len(raw_html)} caratteri")
-    print(f"  [DEBUG] Occorrenze 'threeCol': {raw_html.count('threeCol')}")
-    print(f"  [DEBUG] Occorrenze 'homeFeaturedGrid': {raw_html.count('homeFeaturedGrid')}")
-    print(f"  [DEBUG] Occorrenze 'In primo piano': {raw_html.count('In primo piano')}")
-
     items = []
     seen = set()
 
-    for container in soup.select('div.synopsis.threeCol'):
-        a = container.select_one('a[href]')
-        if not a:
-            continue
+    for container in soup.find_all('div'):
+        classes = container.get('class') or []
+        if 'synopsis' in classes and 'threeCol' in classes:
+            a = container.find('a', href=True)
+            if not a:
+                continue
 
-        href = a.get("href", "").rstrip("/")
-        title = a.get_text(" ", strip=True)
+            href = a.get("href", "").rstrip("/")
+            title = a.get_text(" ", strip=True)
 
-        if not href or not title:
-            continue
+            if not href or not title:
+                continue
 
-        slug = href.split("/it/")[-1].rstrip("/")
-        if slug in seen:
-            continue
-        seen.add(slug)
+            slug = href.split("/it/")[-1].rstrip("/")
+            if slug in seen:
+                continue
+            seen.add(slug)
 
-        items.append({
-            "id": slug,
-            "title": title,
-            "url": f"https://www.jw.org/it/{slug}/",
-        })
+            items.append({
+                "id": slug,
+                "title": title,
+                "url": f"https://www.jw.org/it/{slug}/",
+            })
 
     return items
 
