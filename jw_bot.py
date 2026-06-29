@@ -336,10 +336,12 @@ def fetch_featured() -> list:
 
     items = []
     seen = set()
+    debug_count = 0
 
     for container in soup.find_all('div'):
         classes = container.get('class') or []
         if 'synopsis' in classes and 'threeCol' in classes:
+            debug_count += 1
             a = container.find('a', href=True)
             if not a:
                 continue
@@ -360,6 +362,17 @@ def fetch_featured() -> list:
                 "title": title,
                 "url": f"https://www.jw.org/it/{slug}/",
             })
+
+    print(f"  [DEBUG] div con synopsis+threeCol trovati: {debug_count}")
+
+    if debug_count == 0:
+        # Cerca quanti div hanno SOLO 'synopsis'
+        only_synopsis = sum(1 for d in soup.find_all('div') if 'synopsis' in (d.get('class') or []))
+        print(f"  [DEBUG] div con solo 'synopsis': {only_synopsis}")
+        # Mostra le classi del primo div synopsis trovato
+        first_syn = soup.find('div', class_='synopsis')
+        if first_syn:
+            print(f"  [DEBUG] Classi del primo div.synopsis: {first_syn.get('class')}")
 
     return items
 
