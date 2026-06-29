@@ -168,7 +168,7 @@ def load_state() -> dict:
                 return state
         except Exception:
             print("  [WARN] Stato corrotto, reset.")
-    return {"videos": [], "news": [], "magazines": [], "homepage": [], "daily_text_id": "", "watchtower_id": "", "meeting_id": ""}
+    return {"videos": [], "news": [], "magazines": [], "homepage": [], "featured": [], "daily_text_id": "", "watchtower_id": "", "meeting_id": ""}
 
 
 def save_state(state: dict):
@@ -327,6 +327,70 @@ def fetch_homepage() -> list:
         "title": title,
         "url": f"https://www.jw.org/it/{slug}/",
     }]
+
+
+# ─── In primo piano ──────────────────────────────────────────────────────────
+
+def fetch_featured() -> list:
+    soup = fetch_html(HOME_URL)
+    items = []
+    seen = set()
+
+    for container in soup.select('div.synopsis.threeCol'):
+        a = container.select_one('a[href]')
+        if not a:
+            continue
+
+        href = a.get("href", "").rstrip("/")
+        title = a.get_text(" ", strip=True)
+
+        if not href or not title:
+            continue
+
+        slug = href.split("/it/")[-1].rstrip("/")
+        if slug in seen:
+            continue
+        seen.add(slug)
+
+        items.append({
+            "id": slug,
+            "title": title,
+            "url": f"https://www.jw.org/it/{slug}/",
+        })
+
+    return items
+
+
+# ─── In primo piano ──────────────────────────────────────────────────────────
+
+def fetch_featured() -> list:
+    soup = fetch_html(HOME_URL)
+    items = []
+    seen = set()
+
+    for container in soup.select('div.synopsis.threeCol'):
+        a = container.select_one('a[href]')
+        if not a:
+            continue
+
+        href = a.get("href", "").rstrip("/")
+        title = a.get_text(" ", strip=True)
+
+        if not href or not title:
+            continue
+
+        slug = href.split("/it/")[-1].rstrip("/")
+        if slug in seen:
+            continue
+        seen.add(slug)
+
+        items.append({
+            "id": slug,
+            "title": title,
+            "url": f"https://www.jw.org/it/{slug}/",
+        })
+
+    return items
 
 
 # ─── Scrittura del giorno ────────────────────────────────────────────────────
@@ -643,6 +707,7 @@ SECTIONS = {
     "news":      {"fetch": fetch_news,      "emoji": "📰", "label": "Nuova News JW.org"},
     "magazines": {"fetch": fetch_magazines, "emoji": "📚", "label": "Nuova Pubblicazione JW.org"},
     "homepage":  {"fetch": fetch_homepage,  "emoji": "🏠", "label": "Homepage JW.org aggiornata"},
+    "featured":  {"fetch": fetch_featured,  "emoji": "⭐", "label": "Nuovo articolo In primo piano"},
 }
 
 
