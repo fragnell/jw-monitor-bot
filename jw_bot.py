@@ -410,8 +410,13 @@ def fetch_daily_text() -> dict | None:
 
 
 def check_daily_text(state: dict, log: list):
-    """Controlla se la scrittura del giorno è cambiata e notifica."""
-    print(f"[{datetime.now(tz=ROME_TZ):%d/%m/%Y %H:%M}] Controllo scrittura del giorno...")
+    """Controlla se la scrittura del giorno è cambiata e notifica, solo alle 7:00."""
+    now = datetime.now(tz=ROME_TZ)
+    if now.hour != 7:
+        print(f"[{now:%d/%m/%Y %H:%M}] Scrittura del giorno: non sono le 7:00, skip.")
+        return
+
+    print(f"[{now:%d/%m/%Y %H:%M}] Controllo scrittura del giorno...")
 
     try:
         daily = fetch_daily_text()
