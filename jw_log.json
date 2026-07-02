@@ -244,5 +244,17 @@
     "type": "magazines",
     "id": "svegliatevi-n2-2018-luglio-agosto",
     "title": "Svegliatevi N2 2018 Luglio Agosto"
+  },
+  {
+    "date": "2026-07-02 21:01",
+    "type": "homepage",
+    "id": "biblioteca-digitale/articoli/altri-argomenti/mondiali-calcio-unire-mondo-bibbia",
+    "title": "I Mondiali possono davvero unire il mondo?"
+  },
+  {
+    "date": "2026-07-02 21:01",
+    "type": "featured",
+    "id": "biblioteca-digitale/riviste/g201410/zampa-del-cavallo",
+    "title": "La zampa del cavallo | Frutto di un progetto?"
   }
 ]
