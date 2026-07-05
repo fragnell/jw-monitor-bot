@@ -60,8 +60,8 @@
     "videos": 0,
     "news": 0,
     "magazines": 0,
-    "homepage": 1,
-    "featured": 1
+    "homepage": 0,
+    "featured": 0
   },
   "featured": [
     "biblioteca-digitale/riviste/svegliatevi-n1-2022/rafforza-rapporti-con-familiari-e-amici",
