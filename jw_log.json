@@ -376,5 +376,29 @@
     "type": "news",
     "id": "russia/Non-aver-paura",
     "title": "Non Aver Paura"
+  },
+  {
+    "date": "2026-07-13 21:46",
+    "type": "homepage",
+    "id": "biblioteca-digitale/riviste/torre-di-guardia-n1-2025/conseguenze-guerra",
+    "title": "Gli effetti della guerra su tutti noi"
+  },
+  {
+    "date": "2026-07-13 21:46",
+    "type": "featured",
+    "id": "biblioteca-digitale/riviste/torre-di-guardia-n2-2021-mag-giu",
+    "title": "A un passo da un mondo migliore"
+  },
+  {
+    "date": "2026-07-13 21:46",
+    "type": "featured",
+    "id": "cosa-dice-la-Bibbia/ragazzi/chiedono/sono-una-persona-responsabile",
+    "title": "Sono una persona responsabile?"
+  },
+  {
+    "date": "2026-07-13 21:46",
+    "type": "featured",
+    "id": "biblioteca-digitale/riviste/svegliatevi-n1-2021-mar-apr/soddisfazione-nella-vita",
+    "title": "Il segreto per sentirsi più felici e soddisfatti"
   }
 ]
