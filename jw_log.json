@@ -412,5 +412,17 @@
     "type": "magazines",
     "id": "torre-di-guardia-studio-febbraio-2026",
     "title": "Torre Di Guardia Studio Febbraio 2026"
+  },
+  {
+    "date": "2026-07-14 21:01",
+    "type": "news",
+    "id": "venezuela/AGGIORNAMENTO-Due-terremoti-devastano-il-Venezuela",
+    "title": "Aggiornamento Due Terremoti Devastano Il Venezuela"
+  },
+  {
+    "date": "2026-07-14 21:01",
+    "type": "magazines",
+    "id": "torre-di-guardia-studio-ottobre-2026",
+    "title": "Torre Di Guardia Studio Ottobre 2026"
   }
 ]
