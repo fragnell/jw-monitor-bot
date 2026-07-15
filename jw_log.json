@@ -424,5 +424,17 @@
     "type": "magazines",
     "id": "torre-di-guardia-studio-ottobre-2026",
     "title": "Torre Di Guardia Studio Ottobre 2026"
+  },
+  {
+    "date": "2026-07-15 21:16",
+    "type": "news",
+    "id": "ucraina/Kiev-subisce-uno-dei-più-pesanti-attacchi-dallinizio-della-guerra",
+    "title": "Kiev Subisce Uno Dei Più Pesanti Attacchi Dallinizio Della Guerra"
+  },
+  {
+    "date": "2026-07-15 21:16",
+    "type": "news",
+    "id": "corea-del-sud/In-migliaia-partecipano-a-una-speciale-campagna-di-predicazione-nelle-due-città-più-grandi-della-Corea-del-Sud",
+    "title": "In Migliaia Partecipano A Una Speciale Campagna Di Predicazione Nelle Due Città Più Grandi Della Corea Del Sud"
   }
 ]
