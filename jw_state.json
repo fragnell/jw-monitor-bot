@@ -47,22 +47,20 @@
     "torre-di-guardia-studio-aprile-2026",
     "torre-di-guardia-studio-marzo-2026"
   ],
-  "homepage": [
-    "biblioteca-digitale/riviste/torre-di-guardia-n1-2025/fine-guerre"
-  ],
+  "homepage": [],
   "daily_text_id": "2026-08-13",
   "watchtower_id": "r6/lp-i/2026442",
   "meeting_id": "r6/lp-i/202026246",
   "consecutive_errors": {
-    "videos": 1,
+    "videos": 0,
     "news": 0,
     "magazines": 0,
     "homepage": 0,
     "featured": 0
   },
   "featured": [
-    "biblioteca-digitale/riviste/svegliatevi-n2-2018-luglio-agosto/come-trovare-voglia-di-impegnarsi",
     "biblioteca-digitale/articoli/altri-argomenti/aumento-prezzi",
-    "cosa-dice-la-Bibbia/ragazzi/crescita-personale"
+    "biblioteca-digitale/riviste/svegliatevi-n2-2018-luglio-agosto/come-trovare-voglia-di-impegnarsi",
+    "cosa-dice-la-Bibbia/ragazzi/chiedono/perche-dovrei-pregare"
   ]
 }
