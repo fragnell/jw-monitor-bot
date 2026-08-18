@@ -48,7 +48,9 @@
     "torre-di-guardia-studio-aprile-2026",
     "torre-di-guardia-studio-marzo-2026"
   ],
-  "homepage": [],
+  "homepage": [
+    "biblioteca-digitale/articoli/altri-argomenti/cosa-significa-essere-cristiani"
+  ],
   "daily_text_id": "2026-08-18",
   "watchtower_id": "r6/lp-i/2026442",
   "meeting_id": "r6/lp-i/202026247",
@@ -60,8 +62,8 @@
     "featured": 0
   },
   "featured": [
-    "biblioteca-digitale/articoli/altri-argomenti/aumento-prezzi",
-    "biblioteca-digitale/riviste/svegliatevi-n2-2018-luglio-agosto/come-trovare-voglia-di-impegnarsi",
-    "cosa-dice-la-Bibbia/ragazzi/chiedono/perche-dovrei-pregare"
+    "biblioteca-digitale/riviste/svegliatevi-n2-2018-luglio-agosto/genitori-figli-come-migliorare-dialogo",
+    "biblioteca-digitale/riviste/torre-di-guardia-n1-2023/come-aiutare-chi-problema-salute-mentale",
+    "cosa-dice-la-Bibbia/domande/regola-oro"
   ]
 }
