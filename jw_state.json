@@ -46,7 +46,9 @@
     "torre-di-guardia-studio-giugno-2026",
     "torre-di-guardia-studio-maggio-2026"
   ],
-  "homepage": [],
+  "homepage": [
+    "biblioteca-digitale/video/ebtv/video-volonta-dio-matrimonio"
+  ],
   "daily_text_id": "2026-09-17",
   "watchtower_id": "r6/lp-i/2026483",
   "meeting_id": "r6/lp-i/202026253",
@@ -58,8 +60,8 @@
     "featured": 0
   },
   "featured": [
-    "biblioteca-digitale/riviste/wp20150101/governo-di-dio-senza-corruzione",
-    "biblioteca-digitale/riviste/svegliatevi-n2-2020-lug-ago/siamo-stati-creati-per-soffrire",
-    "cosa-dice-la-Bibbia/scienza/frutto-di-un-progetto/tentacolo-del-polpo"
+    "biblioteca-digitale/riviste/wp20150401/perch%C3%A9-studiare-bibbia",
+    "biblioteca-digitale/riviste/torre-di-guardia-n4-2017-luglio/cosa-dice-la-bibbia-ansia",
+    "biblioteca-digitale/riviste/svegliatevi-n2-2020-lug-ago/siamo-stati-creati-per-soffrire"
   ]
 }
