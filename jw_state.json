@@ -47,7 +47,9 @@
     "torre-di-guardia-studio-giugno-2026",
     "torre-di-guardia-studio-maggio-2026"
   ],
-  "homepage": [],
+  "homepage": [
+    "biblioteca-digitale/video/Dio-ci-d%C3%A0-una-buona-notizia-serie-di-video/video-nome-di-dio"
+  ],
   "daily_text_id": "2026-09-24",
   "watchtower_id": "r6/lp-i/2026484",
   "meeting_id": "r6/lp-i/202026254",
@@ -59,8 +61,8 @@
     "featured": 0
   },
   "featured": [
-    "biblioteca-digitale/riviste/torre-di-guardia-n1-2026/pace-tecnologia",
-    "biblioteca-digitale/riviste/svegliatevi-n6-2016-dicembre",
-    "biblioteca-digitale/riviste/svegliatevi-n3-2019-novembre-dicembre/famiglia-amicizia-versetti-biblici"
+    "biblioteca-digitale/articoli/altri-argomenti/intelligenza-artificiale",
+    "biblioteca-digitale/riviste/g20040108/diplomazia-portare-pace-mondiale",
+    "biblioteca-digitale/articoli/altri-argomenti/bont%C3%A0gentilezzabibbia"
   ]
 }
