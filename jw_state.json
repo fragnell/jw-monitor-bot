@@ -45,7 +45,9 @@
     "torre-di-guardia-studio-giugno-2026",
     "torre-di-guardia-studio-maggio-2026"
   ],
-  "homepage": [],
+  "homepage": [
+    "biblioteca-digitale/riviste/torre-di-guardia-n1-2026/pace-nel-mondo-governi"
+  ],
   "daily_text_id": "2026-10-01",
   "watchtower_id": "r6/lp-i/2026485",
   "meeting_id": "r6/lp-i/202026255",
@@ -57,8 +59,8 @@
     "featured": 0
   },
   "featured": [
+    "cosa-dice-la-Bibbia/ragazzi/chiedono/come-difendersi-dal-cyberbullismo",
     "cosa-dice-la-Bibbia/domande/perch%C3%A9-pregare",
-    "biblioteca-digitale/articoli/altri-argomenti/bont%C3%A0-gentilezza-bibbia",
-    "cosa-dice-la-Bibbia/ragazzi/chiedono/come-difendersi-dal-cyberbullismo"
+    "cosa-dice-la-Bibbia/domande/domande-su-gesu"
   ]
 }
