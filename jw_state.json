@@ -1,5 +1,6 @@
 {
   "videos": [
+    "6a9ecf027d8ccf253b9965e1",
     "6a96c2197d8ccf253b7b0a14",
     "6abfcf3b7d8ccf253b26827e",
     "6ab2518c7d8ccf253bdc0360",
@@ -15,6 +16,7 @@
   ],
   "news": [
     "stati-uniti/I-Testimoni-acquistano-una-proprietà-nei-pressi-della-sede-mondiale-di-Warwick-nello-stato-di-New-York",
+    "spagna/Campagna-di-predicazione-in-quattro-mete-turistiche-della-Spagna",
     "svezia/Una-storica-decisione-sullobiezione-di-coscienza-in-Svezia-compie-60-anni",
     "moldova/Per-la-prima-volta-i-Testimoni-di-Geova-organizzano-una-campagna-speciale-di-predicazione-in-Moldova",
     "dal-mondo/Aggiornamento-dal-Corpo-Direttivo-n-6-2026",
@@ -28,11 +30,10 @@
     "stati-uniti/Richiesti-più-di-3300-studi-biblici-durante-sei-campagne-di-predicazione-negli-Stati-Uniti",
     "colombia/Richiesti-più-di-8200-studi-biblici-in-una-sola-settimana-durante-una-campagna-di-predicazione-in-Colombia",
     "colombia/Forte-terremoto-devasta-la-Colombia",
-    "russia/Lansia-che-provavo-si-è-trasformata-in-felicità",
     "dal-mondo/testimoni-di-geova-in-prigione"
   ],
   "magazines": [
-    "torre-di-guardia-studio-luglio-2026",
+    "torre-di-guardia-studio-agosto-2026",
     "torre-di-guardia-n1-2026",
     "svegliatevi-n1-2026",
     "svegliatevi-n1-2025",
@@ -45,12 +46,12 @@
     "torre-di-guardia-studio-novembre-2026",
     "torre-di-guardia-studio-ottobre-2026",
     "torre-di-guardia-studio-settembre-2026",
-    "torre-di-guardia-studio-agosto-2026",
+    "torre-di-guardia-studio-luglio-2026",
     "torre-di-guardia-studio-giugno-2026",
     "torre-di-guardia-studio-maggio-2026"
   ],
   "homepage": [
-    "biblioteca-digitale/riviste/torre-di-guardia-n1-2026/pace-nel-mondo-governi"
+    "biblioteca-digitale/libri/parola-di-dio-%C3%A8-verit%C3%A0"
   ],
   "daily_text_id": "2026-10-05",
   "watchtower_id": "r6/lp-i/2026485",
@@ -63,8 +64,8 @@
     "featured": 0
   },
   "featured": [
-    "cosa-dice-la-Bibbia/ragazzi/chiedono/come-difendersi-dal-cyberbullismo",
-    "cosa-dice-la-Bibbia/domande/perch%C3%A9-pregare",
-    "cosa-dice-la-Bibbia/domande/domande-su-gesu"
+    "biblioteca-digitale/riviste/torre-di-guardia-n1-2023/salute-mentale-emergenza-globale",
+    "biblioteca-digitale/articoli/altri-argomenti/sicurezza-donne",
+    "biblioteca-digitale/articoli/altri-argomenti/aiuto-ciechi"
   ]
 }
