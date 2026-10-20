@@ -52,21 +52,21 @@
     "torre-di-guardia-studio-giugno-2026"
   ],
   "homepage": [
-    "biblioteca-digitale/riviste/torre-di-guardia-n1-2026/pace-religione"
+    "biblioteca-digitale/riviste/g201307/proteste-la-soluzione"
   ],
   "daily_text_id": "2026-10-19",
   "watchtower_id": "r6/lp-i/2026521",
   "meeting_id": "r6/lp-i/202026258",
   "consecutive_errors": {
     "videos": 0,
-    "news": 0,
+    "news": 1,
     "magazines": 0,
     "homepage": 0,
     "featured": 0
   },
   "featured": [
-    "biblioteca-digitale/riviste/wp20151001/fine-povert%C3%A0",
-    "biblioteca-digitale/articoli/altri-argomenti/affrontare-epidemia-lavagna-animata",
-    "biblioteca-digitale/riviste/g201501/struttura-alveare"
+    "biblioteca-digitale/riviste/torre-di-guardia-n1-2026/pace-sviluppo",
+    "biblioteca-digitale/articoli/altri-argomenti/crisi-valori",
+    "cosa-dice-la-Bibbia/scienza/frutto-di-un-progetto/lingua-colibri"
   ]
 }
