@@ -1564,5 +1564,23 @@
     "type": "news",
     "id": "russia/PENA-DETENTIVA-Resto-calmo-e-non-ho-paura",
     "title": "Pena Detentiva Resto Calmo E Non Ho Paura"
+  },
+  {
+    "date": "2026-10-29 21:30",
+    "type": "homepage",
+    "id": "biblioteca-digitale/articoli/altri-argomenti/protesta-giovani-europa",
+    "title": "Le proteste dei giovani in Europa"
+  },
+  {
+    "date": "2026-10-29 21:30",
+    "type": "featured",
+    "id": "biblioteca-digitale/articoli/altri-argomenti/leader-governare",
+    "title": "Quale leader scegliere? Cosa dice la Bibbia?"
+  },
+  {
+    "date": "2026-10-29 21:31",
+    "type": "featured",
+    "id": "biblioteca-digitale/riviste/svegliatevi-n5-2016-ottobre/ges%C3%B9-storia-o-mito",
+    "title": "Gesù: storia o mito?"
   }
 ]
