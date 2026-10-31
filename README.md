@@ -13,6 +13,7 @@ Bot Telegram che monitora **JW.org in italiano** e invia notifiche automatiche s
 | 📚 Nuove riviste | jw.org/it/biblioteca-digitale/riviste/ | ogni 15 minuti |
 | 🏠 Aggiornamento homepage + ⭐ In primo piano (una sola notifica) | jw.org/it/ | ogni 15 minuti |
 | 📖 Scrittura del giorno | wol.jw.org | ogni giorno alle 07:00 |
+| 📲 Messaggio WhatsApp pronto | messaggi/ANNO.json | ogni giorno alle 07:00 |
 | 📅 Adunanza infrasettimanale | wol.jw.org | ogni lunedì alle 09:00 |
 | 📋 Studio Torre di Guardia | wol.jw.org | ogni giovedì alle 09:00 |
 
@@ -67,6 +68,7 @@ GitHub → Settings → Secrets and variables → Actions → New repository sec
 | `jw_log.json` | Log eventi degli ultimi 365 giorni |
 | `.github/workflows/jw-monitor.yml` | Workflow GitHub Actions |
 | `requirements.txt` | Dipendenze Python |
+| `messaggi/ANNO.json` | Messaggi WhatsApp preparati per ogni giorno |
 
 ---
 
@@ -94,6 +96,25 @@ Il bot è attivo dalle **06:00 alle 23:00** (ora italiana) tramite cron-job.org.
 | Ogni lunedì alle 09:00 | 📅 Adunanza infrasettimanale |
 | Ogni giovedì alle 09:00 | 📋 Studio Torre di Guardia |
 | Ogni 15 minuti | 🎬 Video, 📰 News, 📚 Riviste, 🏠 Homepage + ⭐ In primo piano |
+
+---
+
+## 📲 Messaggio WhatsApp della scrittura del giorno
+
+Alle 07:00, insieme alla scrittura del giorno, il bot invia **solo in chat privata** (`CHAT_ID`) un messaggio già pronto per il gruppo WhatsApp, con il pulsante **"Invia su WhatsApp"**: si apre WhatsApp con il testo già inserito, basta scegliere il gruppo e inviare.
+
+I testi sono preparati in anticipo in `messaggi/ANNO.json` (es. `messaggi/2026.json`):
+
+```json
+{
+  "2026-11-01": {
+    "scrittura": "Ger. 3:12",
+    "messaggio": "Buongiorno a tutti!\n..."
+  }
+}
+```
+
+Controllo automatico: il bot confronta `scrittura` con il riferimento vero letto da wol.jw.org. Se non coincidono, il messaggio **non** viene proposto e arriva un avviso ⚠️. Se per un giorno non c'è nessun testo, non succede nulla.
 
 ---
 

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import html
 import json
 import os
+import re
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 import requests
 from bs4 import BeautifulSoup
@@ -33,6 +35,7 @@ MEETINGS_FILE = "wol_meetings.html"
 MEETING_FILE = "wol_meetings_detail.html"
 MEETING_URL_ENV = "MEETING_URL"
 WATCHTOWER_FILE = "wol_watchtower.html"
+WHATSAPP_DIR = "messaggi"
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
@@ -48,17 +51,20 @@ def send_telegram(text: str):
         print(f"  [TELEGRAM ERROR] {e}")
 
 
-def send_telegram_to(chat_id, text: str):
+def send_telegram_to(chat_id, text: str, reply_markup: dict | None = None):
     """Invia un messaggio a un chat_id specifico."""
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     try:
         requests.post(
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-            json={
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            },
+            json=payload,
             timeout=15,
         )
     except Exception as e:
@@ -462,6 +468,55 @@ def fetch_daily_text() -> dict | None:
     }
 
 
+def normalize_ref(ref: str) -> str:
+    return re.sub(r"\s+", "", ref).lower()
+
+
+def send_whatsapp_draft(daily: dict):
+    """Invia in privato il messaggio WhatsApp già pronto per oggi,
+    solo se il riferimento coincide con la scrittura vera del giorno."""
+    day = daily["id"]
+    path = os.path.join(WHATSAPP_DIR, f"{day[:4]}.json")
+    if not os.path.exists(path):
+        print(f"  [WARN] {path} non trovato, nessun messaggio WhatsApp.")
+        return
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            entry = json.load(f).get(day)
+    except Exception as e:
+        print(f"  [ERROR] Lettura {path}: {e}")
+        send_error(f"Errore nella lettura di <b>{path}</b>", e)
+        return
+
+    if not entry:
+        print(f"  Nessun messaggio WhatsApp per {day}.")
+        return
+
+    refs = re.findall(r"\(([^()]*\d[^()]*)\)", daily["scripture"])
+    real_ref = refs[-1].strip() if refs else ""
+    if normalize_ref(real_ref) != normalize_ref(entry.get("scrittura", "")):
+        print(f"  [WARN] Riferimento diverso: JSON {entry.get('scrittura')} / wol {real_ref}")
+        send_telegram_to(CHAT_ID, (
+            f"⚠️ <b>Messaggio WhatsApp non inviato</b>\n\n"
+            f"Il riferimento nel file per il {day} non coincide con la scrittura del giorno.\n"
+            f"File: <code>{html.escape(entry.get('scrittura', ''))}</code>\n"
+            f"wol.jw.org: <code>{html.escape(real_ref)}</code>"
+        ))
+        return
+
+    text = entry["messaggio"]
+    send_telegram_to(
+        CHAT_ID,
+        html.escape(text, quote=False),
+        reply_markup={"inline_keyboard": [[{
+            "text": "📲 Invia su WhatsApp",
+            "url": f"https://wa.me/?text={quote(text)}",
+        }]]},
+    )
+    print(f"  Messaggio WhatsApp inviato per {day}.")
+
+
 def check_daily_text(state: dict, log: list):
     """Controlla se la scrittura del giorno è cambiata e notifica, solo alle 7:00."""
     now = datetime.now(tz=ROME_TZ)
@@ -496,6 +551,7 @@ def check_daily_text(state: dict, log: list):
         f"🔗 {daily['url']}"
     )
     send_telegram(msg)
+    send_whatsapp_draft(daily)
     state["daily_text_id"] = daily["id"]
 
 
