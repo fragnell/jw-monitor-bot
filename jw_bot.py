@@ -118,8 +118,8 @@ def handle_commands():
                 "🎬 Nuovi video\n"
                 "📰 Nuove news\n"
                 "📚 Nuove riviste\n"
-                "🏠 Aggiornamento homepage\n"
-                "📖 Scrittura del giorno\n"
+                "🏠 Aggiornamento homepage e In primo piano\n"
+                "📖 Scrittura del giorno (ogni giorno alle 7:00)\n"
                 "📋 Studio Torre di Guardia (ogni giovedì alle 9:00)\n"
                 "📅 Adunanza infrasettimanale (ogni lunedì alle 9:00)\n\n"
                 "Il bot è in funzione dalle 06:00 alle 23:00.\n\n"
@@ -147,8 +147,8 @@ def handle_commands():
                 f"🎬 Video\n"
                 f"📰 News\n"
                 f"📚 Riviste\n"
-                f"🏠 Homepage\n"
-                f"📖 Scrittura del giorno\n"
+                f"🏠 Homepage e In primo piano\n"
+                f"📖 Scrittura del giorno (alle 7:00)\n"
                 f"📅 Adunanza infrasettimanale (lunedì alle 9:00)\n"
                 f"📋 Studio Torre di Guardia (giovedì alle 9:00)"
             ))
@@ -307,9 +307,7 @@ def fetch_magazines() -> list:
 
 # ─── Homepage ────────────────────────────────────────────────────────────────
 
-def fetch_homepage() -> list:
-    soup = fetch_html(HOME_URL)
-
+def fetch_homepage(soup: BeautifulSoup) -> list:
     a = soup.select_one('h3.billboardTitle a[href*="/biblioteca-digitale/"]')
     if not a:
         return []
@@ -331,9 +329,7 @@ def fetch_homepage() -> list:
 
 # ─── In primo piano ──────────────────────────────────────────────────────────
 
-def fetch_featured() -> list:
-    soup = fetch_html(HOME_URL)
-
+def fetch_featured(soup: BeautifulSoup) -> list:
     items = []
     seen = set()
 
@@ -365,6 +361,63 @@ def fetch_featured() -> list:
             })
 
     return items
+
+
+def check_home(state: dict, log: list, consecutive_errors: dict):
+    """Scarica la homepage una sola volta e invia un'unica notifica
+    con il nuovo banner e i nuovi articoli In primo piano."""
+    now = datetime.now(tz=ROME_TZ).strftime("%d/%m/%Y %H:%M")
+    print(f"[{now}] Controllo homepage e in primo piano...")
+
+    try:
+        soup = fetch_html(HOME_URL)
+        sections = {
+            "homepage": fetch_homepage(soup),
+            "featured": fetch_featured(soup),
+        }
+        consecutive_errors["homepage"] = 0
+    except Exception as e:
+        count = consecutive_errors.get("homepage", 0) + 1
+        consecutive_errors["homepage"] = count
+        print(f"  [ERROR] {e} (errore #{count})")
+        if count >= 3:
+            send_error(f"Errore persistente nel fetch di <b>homepage</b> ({count} volte di fila)", e)
+            consecutive_errors["homepage"] = 0
+        return
+
+    new_by_key = {}
+    for key, items in sections.items():
+        print(f"  {key} trovati: {len(items)}")
+        known = set(state.get(key, []))
+        state[key] = [x["id"] for x in items][:500]
+        if not known:
+            print(f"  {key} primo avvio: salvati {len(items)} elementi, nessuna notifica.")
+            continue
+        new_by_key[key] = [x for x in items if x["id"] not in known]
+        print(f"  {key} nuovi: {len(new_by_key[key])}")
+
+    new_home = new_by_key.get("homepage", [])
+    home_ids = {x["id"] for x in new_home}
+    new_featured = [
+        x for x in new_by_key.get("featured", []) if x["id"] not in home_ids
+    ][:MAX_NOTIFY]
+
+    if not new_home and not new_featured:
+        return
+
+    lines = ["🏠 <b>Homepage JW.org aggiornata</b>"]
+    for item in new_home:
+        lines.append(f"\n📌 {item['title']}\n🔗 {item['url']}")
+    if new_featured:
+        lines.append("\n⭐ <b>In primo piano:</b>")
+        for item in new_featured:
+            lines.append(f"\n📌 {item['title']}\n🔗 {item['url']}")
+    send_telegram("\n".join(lines))
+
+    for item in new_home:
+        log_event(log, "homepage", item["id"], item["title"])
+    for item in new_featured:
+        log_event(log, "featured", item["id"], item["title"])
 
 
 # ─── Scrittura del giorno ────────────────────────────────────────────────────
@@ -606,7 +659,6 @@ def fetch_watchtower() -> dict | None:
             links = soup_m.select('a[href*="/wol/d/"]')
             if links:
                 raw = links[0].get_text(" ", strip=True)
-                parts = week.split()
                 week_parts = []
                 for p in raw.split():
                     week_parts.append(p)
@@ -685,8 +737,6 @@ SECTIONS = {
     "videos":    {"fetch": fetch_videos,    "emoji": "🎬", "label": "Nuovo Video JW.org"},
     "news":      {"fetch": fetch_news,      "emoji": "📰", "label": "Nuova News JW.org"},
     "magazines": {"fetch": fetch_magazines, "emoji": "📚", "label": "Nuova Pubblicazione JW.org"},
-    "homepage":  {"fetch": fetch_homepage,  "emoji": "🏠", "label": "Homepage JW.org aggiornata"},
-    "featured":  {"fetch": fetch_featured,  "emoji": "⭐", "label": "Nuovo articolo In primo piano"},
 }
 
 
@@ -739,6 +789,8 @@ def check_all():
             time.sleep(1)
 
         state[key] = [x["id"] for x in items][:500]
+
+    check_home(state, log, consecutive_errors)
 
     state["consecutive_errors"] = consecutive_errors
     save_state(state)

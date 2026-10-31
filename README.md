@@ -11,8 +11,8 @@ Bot Telegram che monitora **JW.org in italiano** e invia notifiche automatiche s
 | 🎬 Nuovi video | API CDN JW | ogni 15 minuti |
 | 📰 Nuove news | jw.org/it/news/ | ogni 15 minuti |
 | 📚 Nuove riviste | jw.org/it/biblioteca-digitale/riviste/ | ogni 15 minuti |
-| 🏠 Aggiornamento homepage | jw.org/it/ | ogni 15 minuti |
-| 📖 Scrittura del giorno | wol.jw.org | ogni giorno alle 06:00 |
+| 🏠 Aggiornamento homepage + ⭐ In primo piano (una sola notifica) | jw.org/it/ | ogni 15 minuti |
+| 📖 Scrittura del giorno | wol.jw.org | ogni giorno alle 07:00 |
 | 📅 Adunanza infrasettimanale | wol.jw.org | ogni lunedì alle 09:00 |
 | 📋 Studio Torre di Guardia | wol.jw.org | ogni giovedì alle 09:00 |
 
@@ -90,10 +90,10 @@ Il bot è attivo dalle **06:00 alle 23:00** (ora italiana) tramite cron-job.org.
 
 | Orario | Notifica |
 |---|---|
-| Ogni giorno alle 06:00 | 📖 Scrittura del giorno |
+| Ogni giorno alle 07:00 | 📖 Scrittura del giorno |
 | Ogni lunedì alle 09:00 | 📅 Adunanza infrasettimanale |
 | Ogni giovedì alle 09:00 | 📋 Studio Torre di Guardia |
-| Ogni 15 minuti | 🎬 Video, 📰 News, 📚 Riviste, 🏠 Homepage |
+| Ogni 15 minuti | 🎬 Video, 📰 News, 📚 Riviste, 🏠 Homepage + ⭐ In primo piano |
 
 ---
 
@@ -107,6 +107,7 @@ Il file `jw_state.json` tiene traccia di tutti i contenuti già notificati:
   "news": [],
   "magazines": [],
   "homepage": [],
+  "featured": [],
   "daily_text_id": "2026-06-13",
   "watchtower_id": "r6/lp-i/2026365",
   "meeting_id": "r6/lp-i/202026166"
@@ -119,15 +120,15 @@ Al primo avvio lo stato viene popolato senza inviare notifiche. Dalla run succes
 
 ## 📊 Log eventi
 
-Il file `jw_log.json` registra ogni notifica inviata con data/ora italiana, tipo e titolo. Mantiene gli ultimi 365 giorni di storico per analisi statistiche future.
+Il file `jw_log.json` registra ogni notifica di monitoraggio del sito (video, news, riviste, homepage, in primo piano) con data/ora italiana, tipo e titolo. Scrittura del giorno, adunanza e Torre di Guardia non vengono registrate perché non fanno parte del monitoraggio. Mantiene gli ultimi 365 giorni di storico per analisi statistiche future.
 
 ```json
 [
   {
-    "date": "2026-06-13 09:00",
-    "type": "daily_text",
-    "id": "2026-06-13",
-    "title": "Chi ha costruito ogni cosa è Dio (Ebr. 3:4)"
+    "date": "2026-10-30 16:45",
+    "type": "videos",
+    "id": "6ad620397d8ccf253bcaec1f",
+    "title": "Mark Sanderson. La liberazione è vicina (Luca 21:28)"
   }
 ]
 ```
