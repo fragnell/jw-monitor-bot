@@ -38,6 +38,14 @@ jobs:
 
       - name: Fetch meetings page via curl
         run: |
+          # Servono solo il lunedì (adunanza) e il giovedì (Torre di Guardia) alle 9:00 ora di Roma:
+          # negli altri momenti non si chiama wol.jw.org
+          DOW=$(TZ="Europe/Rome" date +%u)
+          HOUR=$(TZ="Europe/Rome" date +%-H)
+          if [ "$HOUR" != "9" ] || { [ "$DOW" != "1" ] && [ "$DOW" != "4" ]; }; then
+            echo "Non è lunedì o giovedì alle 9:00: salto il download da wol.jw.org."
+            exit 0
+          fi
           # Costruisce l'URL adunanze con anno e numero settimana ISO
           YEAR=$(TZ="Europe/Rome" date +%Y)
           WEEK=$(TZ="Europe/Rome" date +%-V)
