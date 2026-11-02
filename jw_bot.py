@@ -428,7 +428,41 @@ def check_home(state: dict, log: list, consecutive_errors: dict):
 
 # ─── Scrittura del giorno ────────────────────────────────────────────────────
 
+def fetch_daily_text_json() -> dict | None:
+    """Legge la scrittura del giorno dal libretto convertito in JSON (scritture/ANNO.json)."""
+    today = os.getenv("TODAY_ISO", datetime.now(tz=ROME_TZ).strftime("%Y-%m-%d"))
+    path = os.path.join("scritture", f"{today[:4]}.json")
+    if not os.path.exists(path):
+        print(f"  [WARN] {path} non trovato.")
+        return None
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            entry = json.load(f).get(today)
+    except Exception as e:
+        print(f"  [ERROR] Lettura {path}: {e}")
+        return None
+
+    if not entry:
+        print(f"  [WARN] Nessuna scrittura per {today} in {path}.")
+        return None
+
+    print(f"  Identificativo scrittura: {today} (da {path})")
+    return {
+        "id": today,
+        "date": entry["data"],
+        "scripture": entry["scrittura"],
+        "comment": entry["commento"],
+        "url": DAILY_TEXT_URL,
+    }
+
+
 def fetch_daily_text() -> dict | None:
+    """Prima il libretto in JSON; se manca il giorno, ripiega sulla pagina wol.jw.org."""
+    return fetch_daily_text_json() or fetch_daily_text_html()
+
+
+def fetch_daily_text_html() -> dict | None:
     """Legge la scrittura del giorno dal file HTML scaricato da curl."""
     if not os.path.exists(DAILY_TEXT_FILE):
         print(f"  [WARN] {DAILY_TEXT_FILE} non trovato, skip.")
