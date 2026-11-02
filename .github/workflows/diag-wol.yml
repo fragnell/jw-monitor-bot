@@ -1,0 +1,51 @@
+name: Diag wol
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: IP del runner
+        run: |
+          curl -s https://api.ipify.org; echo
+
+      - name: curl con header da browser e senza
+        run: |
+          D=$(TZ="Europe/Rome" date +%Y/%-m/%-d)
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          for URL in "https://wol.jw.org/it/wol/h/r6/lp-i/$D" "https://wol.jw.org/it/wol/dt/r6/lp-i/$D" "https://wol.jw.org/it/" "https://www.jw.org/it/"; do
+            for MODE in browser curl; do
+              echo "=== $MODE $URL"
+              if [ "$MODE" = "browser" ]; then
+                curl -s -o /tmp/out.html -D /tmp/h.txt -w "HTTP %{http_code} size %{size_download}\n" -A "$UA" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: it-IT,it;q=0.9" --compressed --max-time 30 "$URL"
+              else
+                curl -s -o /tmp/out.html -D /tmp/h.txt -w "HTTP %{http_code} size %{size_download}\n" --max-time 30 "$URL"
+              fi
+              tr -d '\r' < /tmp/h.txt | head -n 14
+              echo "data-date nel corpo: $(grep -c 'data-date' /tmp/out.html || true)  waf nel corpo: $(grep -c -i 'awsWaf' /tmp/out.html || true)"
+            done
+          done
+
+      - name: Chromium reale (Playwright)
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+          python - <<'PY'
+          import datetime, zoneinfo
+          from playwright.sync_api import sync_playwright
+          d = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Rome"))
+          url = f"https://wol.jw.org/it/wol/h/r6/lp-i/{d.year}/{d.month}/{d.day}"
+          iso = d.strftime("%Y-%m-%d")
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              pg = b.new_page(locale="it-IT")
+              r = pg.goto(url, wait_until="networkidle", timeout=90000)
+              html = pg.content()
+              print("URL", url)
+              print("status", r.status, "len", len(html))
+              print("data-date presente:", "data-date" in html, "| giorno", iso, "presente:", iso in html)
+              print("waf nel corpo:", "awsWaf" in html or "gokuProps" in html)
+              b.close()
+          PY
