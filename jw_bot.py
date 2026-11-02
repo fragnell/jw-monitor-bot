@@ -4,7 +4,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from urllib.parse import quote, unquote
 
@@ -20,6 +20,7 @@ GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 STATE_FILE = "jw_state.json"
 LOG_FILE = "jw_log.json"
 MAX_NOTIFY = 3
+MAX_GROUP = 10
 BASE_URL = "https://www.jw.org"
 
 VIDEOS_API = (
@@ -36,15 +37,19 @@ MEETING_FILE = "wol_meetings_detail.html"
 MEETING_URL_ENV = "MEETING_URL"
 WATCHTOWER_FILE = "wol_watchtower.html"
 WHATSAPP_DIR = "messaggi"
+ACTION_BUTTONS = {"inline_keyboard": [[
+    {"text": "✅ Letto", "callback_data": "read"},
+    {"text": "⏰ Stasera", "callback_data": "remind"},
+]]}
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
 # ─── Telegram ────────────────────────────────────────────────────────────────
 
-def send_telegram(text: str):
+def send_telegram(text: str, buttons: bool = False):
     try:
-        send_telegram_to(CHAT_ID, text)
+        send_telegram_to(CHAT_ID, text, ACTION_BUTTONS if buttons else None)
         if GROUP_CHAT_ID:
             send_telegram_to(GROUP_CHAT_ID, text)
     except Exception as e:
@@ -77,6 +82,88 @@ def send_error(context: str, error: Exception):
     send_telegram(msg)
 
 
+# ─── Pulsanti e promemoria ───────────────────────────────────────────────────
+
+def telegram_api(method: str, payload: dict):
+    """Chiama un metodo dell'API Telegram e stampa l'errore se Telegram lo rifiuta."""
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{TOKEN}/{method}",
+            json=payload,
+            timeout=15,
+        )
+        if not r.ok:
+            print(f"  [TELEGRAM] {method}: {r.status_code} {r.text[:200]}")
+        return r
+    except Exception as e:
+        print(f"  [TELEGRAM ERROR] {method}: {e}")
+        return None
+
+
+def reminder_time() -> datetime:
+    """Le 20:00 di oggi, o di domani se è già passata quell'ora."""
+    now = datetime.now(tz=ROME_TZ)
+    when = now.replace(hour=20, minute=0, second=0, microsecond=0)
+    if now >= when:
+        when += timedelta(days=1)
+    return when
+
+
+def process_callbacks(callbacks: list, state: dict):
+    """Gestisce i pulsanti premuti: ✅ Letto toglie i pulsanti, ⏰ Stasera imposta un promemoria."""
+    reminders = state.setdefault("reminders", [])
+
+    for cq in callbacks:
+        msg = cq.get("message") or {}
+        chat_id = (msg.get("chat") or {}).get("id")
+        message_id = msg.get("message_id")
+        data = cq.get("data", "")
+
+        if not chat_id or not message_id or str(chat_id) != str(CHAT_ID):
+            continue
+
+        print(f"  [BTN] {data} su messaggio {message_id}")
+        telegram_api("answerCallbackQuery", {"callback_query_id": cq.get("id")})
+
+        if data == "remind":
+            when = reminder_time()
+            reminders.append({
+                "chat_id": chat_id,
+                "text": msg.get("text", ""),
+                "when": when.strftime("%Y-%m-%d %H:%M"),
+            })
+            domani = " di domani" if when.date() != datetime.now(tz=ROME_TZ).date() else ""
+            markup = {"inline_keyboard": [[
+                {"text": f"⏰ Promemoria alle 20:00{domani}", "callback_data": "noop"},
+            ]]}
+        elif data == "read":
+            markup = {"inline_keyboard": []}
+        else:
+            continue
+
+        telegram_api("editMessageReplyMarkup", {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "reply_markup": markup,
+        })
+
+
+def send_due_reminders(state: dict):
+    """Invia i promemoria arrivati a scadenza e li toglie dallo stato."""
+    now = datetime.now(tz=ROME_TZ).strftime("%Y-%m-%d %H:%M")
+    pending = []
+    for r in state.get("reminders", []):
+        if r["when"] <= now:
+            print(f"  [PROMEMORIA] invio a {r['chat_id']}")
+            send_telegram_to(
+                r["chat_id"],
+                "⏰ <b>Promemoria</b>\n\n" + html.escape(r["text"], quote=False),
+            )
+        else:
+            pending.append(r)
+    state["reminders"] = pending
+
+
 # ─── Comandi Telegram ────────────────────────────────────────────────────────
 
 def get_updates() -> list:
@@ -100,14 +187,20 @@ def get_updates() -> list:
         return []
 
 
-def handle_commands():
-    """Processa i comandi ricevuti dall'ultima esecuzione."""
+def handle_commands() -> list:
+    """Processa i comandi ricevuti dall'ultima esecuzione.
+    Restituisce i pulsanti premuti (callback_query), da gestire con lo stato."""
     updates = get_updates()
+    callbacks = []
 
     if not updates:
-        return
+        return callbacks
 
     for update in updates:
+        if update.get("callback_query"):
+            callbacks.append(update["callback_query"])
+            continue
+
         message = update.get("message", {})
         text = message.get("text", "").strip()
         chat_id = message.get("chat", {}).get("id")
@@ -127,6 +220,7 @@ def handle_commands():
                 "🏠 Aggiornamento homepage e In primo piano\n"
                 "📖 Scrittura del giorno (ogni giorno alle 7:00)\n"
                 "📋 Studio Torre di Guardia (ogni giovedì alle 9:00)\n"
+                "📊 Riepilogo della settimana (ogni domenica alle 19:00)\n"
                 "📅 Adunanza infrasettimanale (ogni lunedì alle 9:00)\n\n"
                 "Il bot è in funzione dalle 06:00 alle 23:00.\n\n"
                 "<b>Comandi disponibili:</b>\n"
@@ -158,6 +252,8 @@ def handle_commands():
                 f"📅 Adunanza infrasettimanale (lunedì alle 9:00)\n"
                 f"📋 Studio Torre di Guardia (giovedì alle 9:00)"
             ))
+
+    return callbacks
 
 
 # ─── Stato ───────────────────────────────────────────────────────────────────
@@ -418,7 +514,7 @@ def check_home(state: dict, log: list, consecutive_errors: dict):
         lines.append("\n⭐ <b>In primo piano:</b>")
         for item in new_featured:
             lines.append(f"\n📌 {item['title']}\n🔗 {item['url']}")
-    send_telegram("\n".join(lines))
+    send_telegram("\n".join(lines), buttons=True)
 
     for item in new_home:
         log_event(log, "homepage", item["id"], item["title"])
@@ -722,7 +818,7 @@ def check_meeting(state: dict, log: list):
         f"🟤 <b>Vita cristiana:</b>\n{parts_text}\n\n"
         f"🔗 {meeting['url']}"
     )
-    send_telegram(msg)
+    send_telegram(msg, buttons=True)
     state["meeting_id"] = meeting["id"]
 
 
@@ -823,26 +919,78 @@ def check_watchtower(state: dict, log: list):
         f"<b>In questo articolo:</b>\n{wt['synopsis']}\n\n"
         f"🔗 {wt['url']}"
     )
-    send_telegram(msg)
+    send_telegram(msg, buttons=True)
     state["watchtower_id"] = wt["id"]
+
+
+# ─── Riepilogo settimanale ───────────────────────────────────────────────────
+
+def check_weekly_digest(state: dict, log: list):
+    """Ogni domenica alle 19:00 invia il riepilogo delle novità della settimana."""
+    now = datetime.now(tz=ROME_TZ)
+    if now.weekday() != 6 or now.hour != 19:
+        return
+
+    iso = now.isocalendar()
+    week_id = f"{iso[0]}-W{iso[1]:02d}"
+    if state.get("weekly_digest_week") == week_id:
+        print(f"  Riepilogo settimanale già inviato per {week_id}, skip.")
+        return
+
+    print(f"[{now:%d/%m/%Y %H:%M}] Riepilogo settimanale...")
+    cutoff = (now - timedelta(days=7)).strftime("%Y-%m-%d %H:%M")
+    recent = [e for e in log if e["date"] >= cutoff]
+
+    sections = [
+        ("videos", "🎬", "Video"),
+        ("news", "📰", "News"),
+        ("magazines", "📚", "Pubblicazioni"),
+        ("homepage", "🏠", "Homepage"),
+        ("featured", "⭐", "In primo piano"),
+    ]
+    lines = ["📊 <b>Riepilogo della settimana</b>"]
+    total = 0
+    for key, emoji, label in sections:
+        items = [e for e in recent if e["type"] == key]
+        if not items:
+            continue
+        total += len(items)
+        lines.append(f"\n{emoji} <b>{label}</b> ({len(items)})")
+        for e in items[:8]:
+            lines.append(f"• {html.escape(e['title'], quote=False)}")
+        if len(items) > 8:
+            lines.append(f"… e altri {len(items) - 8}")
+    if not total:
+        lines.append("\nNessuna novità questa settimana.")
+
+    nxt = (now + timedelta(days=1)).isocalendar()
+    lines.append(
+        f"\n📅 <b>Adunanza della prossima settimana:</b>\n"
+        f"https://wol.jw.org/it/wol/meetings/r6/lp-i/{nxt[0]}/{nxt[1]}"
+    )
+    send_telegram("\n".join(lines))
+    state["weekly_digest_week"] = week_id
 
 
 # ─── Check principale ────────────────────────────────────────────────────────
 
 SECTIONS = {
-    "videos":    {"fetch": fetch_videos,    "emoji": "🎬", "label": "Nuovo Video JW.org"},
-    "news":      {"fetch": fetch_news,      "emoji": "📰", "label": "Nuova News JW.org"},
-    "magazines": {"fetch": fetch_magazines, "emoji": "📚", "label": "Nuova Pubblicazione JW.org"},
+    "videos":    {"fetch": fetch_videos,    "emoji": "🎬", "label": "Nuovo Video JW.org", "plural": "Nuovi video JW.org"},
+    "news":      {"fetch": fetch_news,      "emoji": "📰", "label": "Nuova News JW.org", "plural": "Nuove news JW.org"},
+    "magazines": {"fetch": fetch_magazines, "emoji": "📚", "label": "Nuova Pubblicazione JW.org", "plural": "Nuove pubblicazioni JW.org"},
 }
 
 
-def check_all():
+def check_all(callbacks: list | None = None):
     state = load_state()
     log = load_log()
+    process_callbacks(callbacks or [], state)
+    send_due_reminders(state)
 
     check_daily_text(state, log)
     check_meeting(state, log)
     check_watchtower(state, log)
+    check_weekly_digest(state, log)
 
     consecutive_errors = state.get("consecutive_errors", {})
 
@@ -874,14 +1022,25 @@ def check_all():
         new_items = [x for x in items if x["id"] not in known]
         print(f"  Nuovi: {len(new_items)}")
 
-        for item in new_items[:MAX_NOTIFY]:
+        shown = new_items[:MAX_GROUP]
+        if len(shown) == 1:
+            item = shown[0]
             msg = (
                 f"{cfg['emoji']} <b>{cfg['label']}</b>\n\n"
                 f"📌 {item['title']}\n\n"
                 f"🔗 {item['url']}"
             )
-            send_telegram(msg)
-            log_event(log, key, item["id"], item["title"])
+        else:
+            lines = [f"{cfg['emoji']} <b>{cfg['plural']}</b> ({len(new_items)})"]
+            for item in shown:
+                lines.append(f"\n📌 {item['title']}\n🔗 {item['url']}")
+            if len(new_items) > len(shown):
+                lines.append(f"\n… e altri {len(new_items) - len(shown)}")
+            msg = "\n".join(lines)
+        if shown:
+            send_telegram(msg, buttons=True)
+            for item in shown:
+                log_event(log, key, item["id"], item["title"])
             time.sleep(1)
 
         state[key] = [x["id"] for x in items][:500]
@@ -897,8 +1056,8 @@ def check_all():
 
 def main():
     try:
-        handle_commands()
-        check_all()
+        callbacks = handle_commands()
+        check_all(callbacks)
     except Exception as e:
         print(f"Errore critico: {e}")
         send_error("Errore critico in <b>check_all</b>", e)
