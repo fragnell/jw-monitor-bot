@@ -928,7 +928,7 @@ def check_watchtower(state: dict, log: list):
 def check_weekly_digest(state: dict, log: list):
     """Ogni domenica alle 19:00 invia il riepilogo delle novità della settimana."""
     now = datetime.now(tz=ROME_TZ)
-    if False:  # TEST TEMPORANEO
+    if now.weekday() != 6 or now.hour != 19:
         return
 
     iso = now.isocalendar()
