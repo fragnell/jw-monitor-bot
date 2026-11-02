@@ -534,6 +534,12 @@ def check_daily_text(state: dict, log: list):
         return
 
     if not daily:
+        # Avvisa solo all'ultima corsa dell'ora, per non mandare 4 messaggi
+        if now.minute >= 45:
+            send_telegram_to(CHAT_ID, (
+                f"⚠️ <b>Scrittura del giorno non trovata</b> per il {now:%d/%m/%Y}.\n"
+                f"Il file scaricato da wol.jw.org non contiene la data di oggi."
+            ))
         return
 
     last_id = state.get("daily_text_id", "")
