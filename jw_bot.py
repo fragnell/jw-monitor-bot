@@ -520,7 +520,7 @@ def send_whatsapp_draft(daily: dict):
 def check_daily_text(state: dict, log: list):
     """Controlla se la scrittura del giorno è cambiata e notifica, solo alle 7:00."""
     now = datetime.now(tz=ROME_TZ)
-    if now.hour != 7:
+    if not (7 <= now.hour < 10):
         print(f"[{now:%d/%m/%Y %H:%M}] Scrittura del giorno: non sono le 7:00, skip.")
         return
 
@@ -535,7 +535,7 @@ def check_daily_text(state: dict, log: list):
 
     if not daily:
         # Avvisa solo all'ultima corsa dell'ora, per non mandare 4 messaggi
-        if now.minute >= 45:
+        if now.hour == 9 and now.minute >= 45:
             send_telegram_to(CHAT_ID, (
                 f"⚠️ <b>Scrittura del giorno non trovata</b> per il {now:%d/%m/%Y}.\n"
                 f"Il file scaricato da wol.jw.org non contiene la data di oggi."
