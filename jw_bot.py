@@ -554,7 +554,7 @@ def send_whatsapp_draft(daily: dict):
 def check_daily_text(state: dict, log: list):
     """Controlla se la scrittura del giorno è cambiata e notifica, solo alle 7:00."""
     now = datetime.now(tz=ROME_TZ)
-    if not (7 <= now.hour < 10):
+    if not (7 <= now.hour < 24):  # TEST TEMPORANEO
         print(f"[{now:%d/%m/%Y %H:%M}] Scrittura del giorno: non sono le 7:00, skip.")
         return
 
