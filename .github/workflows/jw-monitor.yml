@@ -49,6 +49,7 @@ jobs:
               "https://wol.jw.org/it/wol/h/r6/lp-i/${TODAY}" \
               -o wol_page.html
             echo "Tentativo $i - File size wol_page: $(wc -c < wol_page.html) bytes"
+            head -c 500 wol_page.html | tr -d "\r" | cut -c1-300; echo
             if grep -q "data-date=\"${TODAY_ISO}" wol_page.html; then
               echo "Data ${TODAY_ISO} trovata."
               break
