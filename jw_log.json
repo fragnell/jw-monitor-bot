@@ -1810,5 +1810,23 @@
     "type": "magazines",
     "id": "torre-di-guardia-studio-febbraio-2027",
     "title": "Torre Di Guardia Studio Febbraio 2027"
+  },
+  {
+    "date": "2026-11-19 19:15",
+    "type": "homepage",
+    "id": "biblioteca-digitale/articoli/altri-argomenti/epidemia-ebola-cosa-dice-bibbia",
+    "title": "Epidemia di Ebola"
+  },
+  {
+    "date": "2026-11-19 19:15",
+    "type": "featured",
+    "id": "biblioteca-digitale/articoli/altri-argomenti/cybercrime-soluzione",
+    "title": "Cybercrime: qual è la soluzione?"
+  },
+  {
+    "date": "2026-11-19 19:15",
+    "type": "featured",
+    "id": "biblioteca-digitale/riviste/svegliatevi-n1-2022/proteggi-salute",
+    "title": "Un mondo nel caos. Proteggi la tua salute"
   }
 ]
